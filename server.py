@@ -18,7 +18,16 @@ def init():
     CREATE TABLE IF NOT EXISTS users (
         username TEXT UNIQUE,
         password TEXT,
-        banned INTEGER DEFAULT 0
+        banned INTEGER DEFAULT 0,
+        safe_mode INTEGER DEFAULT 1
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        command TEXT
     )
     """)
 
@@ -35,7 +44,7 @@ def hash_pw(pw):
 # =========================
 @app.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     username = data.get("username")
     password = data.get("password")
@@ -48,7 +57,7 @@ def register():
         c = conn.cursor()
 
         c.execute(
-            "INSERT INTO users VALUES (?, ?, 0)",
+            "INSERT INTO users (username, password, banned, safe_mode) VALUES (?, ?, 0, 1)",
             (username, hash_pw(password))
         )
 
@@ -66,7 +75,7 @@ def register():
 # =========================
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     username = data.get("username")
     password = data.get("password")
@@ -74,7 +83,8 @@ def login():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
 
-    c.execute("SELECT password, banned FROM users WHERE username=?", (username,))
+    c.execute("SELECT password, banned, safe_mode FROM users WHERE username=?",
+              (username,))
     user = c.fetchone()
 
     conn.close()
@@ -82,7 +92,7 @@ def login():
     if not user:
         return jsonify({"status": "fail"})
 
-    stored_pw, banned = user
+    stored_pw, banned, safe_mode = user
 
     if banned == 1:
         return jsonify({"status": "error", "msg": "banned"})
@@ -90,14 +100,139 @@ def login():
     if stored_pw != hash_pw(password):
         return jsonify({"status": "fail"})
 
+    return jsonify({
+        "status": "ok",
+        "safe_mode": safe_mode
+    })
+
+
+# =========================
+# LOG COMMAND
+# =========================
+@app.route("/log", methods=["POST"])
+def log():
+    data = request.get_json() or {}
+
+    username = data.get("username")
+    command = data.get("command")
+
+    if not username or not command:
+        return jsonify({"status": "error"})
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+
+    c.execute("INSERT INTO logs (username, command) VALUES (?, ?)",
+              (username, command))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "logged"})
+
+
+# =========================
+# USER DASHBOARD
+# =========================
+@app.route("/user/dashboard", methods=["POST"])
+def dashboard():
+    data = request.get_json() or {}
+
+    username = data.get("username")
+
+    if not username:
+        return jsonify({"status": "error"})
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+
+    c.execute("SELECT banned, safe_mode FROM users WHERE username=?",
+              (username,))
+    user = c.fetchone()
+
+    if not user:
+        return jsonify({"status": "error"})
+
+    c.execute("""
+        SELECT command FROM logs 
+        WHERE username=? 
+        ORDER BY id DESC 
+        LIMIT 10
+    """, (username,))
+    logs = c.fetchall()
+
+    conn.close()
+
+    return jsonify({
+        "status": "ok",
+        "banned": user[0],
+        "safe_mode": user[1],
+        "logs": [l[0] for l in logs]
+    })
+
+
+# =========================
+# SAFE MODE TOGGLE
+# =========================
+@app.route("/user/safe_mode", methods=["POST"])
+def safe_mode():
+    data = request.get_json() or {}
+
+    username = data.get("username")
+    mode = data.get("mode")
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+
+    c.execute("UPDATE users SET safe_mode=? WHERE username=?",
+              (mode, username))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "updated"})
+
+
+# =========================
+# ADMIN BAN / UNBAN (FIXED JSON + FORM)
+# =========================
+@app.route("/admin/ban", methods=["POST"])
+def ban():
+    data = request.get_json() or {}
+    username = data.get("username") or request.form.get("username")
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+
+    c.execute("UPDATE users SET banned=1 WHERE username=?", (username,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+
+@app.route("/admin/unban", methods=["POST"])
+def unban():
+    data = request.get_json() or {}
+    username = data.get("username") or request.form.get("username")
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+
+    c.execute("UPDATE users SET banned=0 WHERE username=?", (username,))
+
+    conn.commit()
+    conn.close()
+
     return jsonify({"status": "ok"})
 
 
 # =========================
-# ADMIN DASHBOARD (WEB UI)
+# ADMIN DASHBOARD UI
 # =========================
 @app.route("/admin")
-def admin_panel():
+def admin():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
 
@@ -112,7 +247,7 @@ def admin_panel():
         <title>JEPFX ADMIN</title>
         <style>
             body { font-family: Arial; background:#0b1220; color:white; }
-            table { width:60%; margin:auto; margin-top:50px; border-collapse: collapse; }
+            table { width:70%; margin:auto; margin-top:50px; border-collapse: collapse; }
             th, td { padding:10px; border:1px solid #333; text-align:center; }
             button { padding:6px 12px; cursor:pointer; border:none; }
             .ban { background:red; color:white; }
@@ -122,7 +257,7 @@ def admin_panel():
     <body>
         <h2 style="text-align:center;">JEPFX ADMIN PANEL</h2>
         <table>
-            <tr><th>Username</th><th>Status</th><th>Action</th></tr>
+            <tr><th>User</th><th>Status</th><th>Action</th></tr>
     """
 
     for u in users:
@@ -161,43 +296,7 @@ def admin_panel():
 
 
 # =========================
-# BAN USER (FIXED FOR HTML FORM)
-# =========================
-@app.route("/admin/ban", methods=["POST"])
-def ban_user():
-    username = request.form.get("username")
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
-    c.execute("UPDATE users SET banned=1 WHERE username=?", (username,))
-
-    conn.commit()
-    conn.close()
-
-    return "<script>window.location='/admin'</script>"
-
-
-# =========================
-# UNBAN USER (FIXED FOR HTML FORM)
-# =========================
-@app.route("/admin/unban", methods=["POST"])
-def unban_user():
-    username = request.form.get("username")
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
-    c.execute("UPDATE users SET banned=0 WHERE username=?", (username,))
-
-    conn.commit()
-    conn.close()
-
-    return "<script>window.location='/admin'</script>"
-
-
-# =========================
-# RUN SERVER (RENDER SAFE)
+# RUN SERVER (RENDER READY)
 # =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
