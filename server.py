@@ -1,13 +1,14 @@
 from flask import Flask, request, jsonify
 import sqlite3
 import hashlib
+import os
 
 app = Flask(__name__)
 
 DB = "users.db"
 
 # =========================
-# INIT DB
+# INIT DATABASE
 # =========================
 def init():
     conn = sqlite3.connect(DB)
@@ -46,8 +47,10 @@ def register():
         conn = sqlite3.connect(DB)
         c = conn.cursor()
 
-        c.execute("INSERT INTO users VALUES (?, ?, 0)",
-                  (username, hash_pw(password)))
+        c.execute(
+            "INSERT INTO users VALUES (?, ?, 0)",
+            (username, hash_pw(password))
+        )
 
         conn.commit()
         conn.close()
@@ -56,6 +59,7 @@ def register():
 
     except:
         return jsonify({"status": "error", "msg": "user exists"})
+
 
 # =========================
 # LOGIN
@@ -70,10 +74,9 @@ def login():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
 
-    c.execute("SELECT password, banned FROM users WHERE username=?",
-              (username,))
-
+    c.execute("SELECT password, banned FROM users WHERE username=?", (username,))
     user = c.fetchone()
+
     conn.close()
 
     if not user:
@@ -89,44 +92,9 @@ def login():
 
     return jsonify({"status": "ok"})
 
-# =========================
-# BAN USER (API)
-# =========================
-@app.route("/admin/ban", methods=["POST"])
-def ban_api():
-    data = request.get_json()
-    username = data.get("username")
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
-    c.execute("UPDATE users SET banned=1 WHERE username=?", (username,))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"status": "banned"})
 
 # =========================
-# UNBAN USER (API)
-# =========================
-@app.route("/admin/unban", methods=["POST"])
-def unban_api():
-    data = request.get_json()
-    username = data.get("username")
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
-    c.execute("UPDATE users SET banned=0 WHERE username=?", (username,))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"status": "unbanned"})
-
-# =========================
-# WEB ADMIN DASHBOARD
+# ADMIN DASHBOARD (WEB UI)
 # =========================
 @app.route("/admin")
 def admin_panel():
@@ -141,12 +109,12 @@ def admin_panel():
     html = """
     <html>
     <head>
-        <title>JEPFX Admin</title>
+        <title>JEPFX ADMIN</title>
         <style>
             body { font-family: Arial; background:#0b1220; color:white; }
             table { width:60%; margin:auto; margin-top:50px; border-collapse: collapse; }
             th, td { padding:10px; border:1px solid #333; text-align:center; }
-            button { padding:5px 10px; cursor:pointer; }
+            button { padding:6px 12px; cursor:pointer; border:none; }
             .ban { background:red; color:white; }
             .unban { background:green; color:white; }
         </style>
@@ -191,11 +159,12 @@ def admin_panel():
     html += "</table></body></html>"
     return html
 
+
 # =========================
-# BAN FROM WEB FORM
+# BAN USER (FIXED FOR HTML FORM)
 # =========================
 @app.route("/admin/ban", methods=["POST"])
-def ban_web():
+def ban_user():
     username = request.form.get("username")
 
     conn = sqlite3.connect(DB)
@@ -208,11 +177,12 @@ def ban_web():
 
     return "<script>window.location='/admin'</script>"
 
+
 # =========================
-# UNBAN FROM WEB FORM
+# UNBAN USER (FIXED FOR HTML FORM)
 # =========================
 @app.route("/admin/unban", methods=["POST"])
-def unban_web():
+def unban_user():
     username = request.form.get("username")
 
     conn = sqlite3.connect(DB)
@@ -225,8 +195,10 @@ def unban_web():
 
     return "<script>window.location='/admin'</script>"
 
+
 # =========================
-# RUN SERVER
+# RUN SERVER (RENDER SAFE)
 # =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
