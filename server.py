@@ -2,23 +2,33 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Your allowed users
+# 📂 DATABASE OF USERS
 users = {
     "JEPFX": "@JEPFX_1875",
     "SEAN": "SEAN_0",
     "N4XCO": "N4XCO_0"
 }
 
+# 🌐 CHECK SERVER STATUS
+@app.route('/', methods=['GET'])
+def home():
+    return "✅ SERVER IS RUNNING!", 200
+
+# 🔐 LOGIN FUNCTION
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    user = data.get('username')
-    pwd = data.get('password')
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
 
-    if user in users and users[user] == pwd:
-        return jsonify({"success": True, "message": "Login OK"})
-    else:
-        return jsonify({"success": False, "message": "Wrong credentials"})
+        if username in users and users[username] == password:
+            return jsonify({"success": True, "message": "Login Success"})
+        else:
+            return jsonify({"success": False, "message": "Wrong Username or Password"})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
