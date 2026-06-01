@@ -106,7 +106,8 @@ def get_theme_css():
     }}
     body {{ background: var(--bg-gradient); color: var(--text); }}
     .card, .stat-card, .result-box, .modal-content, .login-box {{ background: var(--card_bg); backdrop-filter: blur(10px); }}
-    input, select, textarea {{ background: var(--input_bg); color: var(--text); border-color: var(--border); }}
+    input, select, textarea {{ background: var(--input-bg) !important; color: var(--text) !important; border-color: var(--border); }}
+    select option {{ background: #1a1a2e; color: #ffffff; }}
     button {{ background: var(--primary); }}
     button:hover {{ filter: brightness(1.1); }}
     .tab {{ background: rgba(255,255,255,0.1); color: var(--text); }}
@@ -285,7 +286,9 @@ def generate_registration_link(license_type, duration_value, duration_type, max_
 def calculate_credits_cost(license_type, duration_value, duration_type):
     """Calculate how many credits a registration will cost"""
     if license_type == "trial":
-        return round(duration_value * 0.1, 2)  # 0.1 credits per hour
+        # Fixed pricing by duration hours
+        TRIAL_FIXED_CREDITS = {3: 2, 6: 3, 12: 4, 24: 5, 72: 10, 168: 20, 720: 50}
+        return TRIAL_FIXED_CREDITS.get(int(duration_value), round(duration_value * 0.1, 2))
     else:  # custom
         if duration_type == "hours":
             return round(duration_value * CREDIT_PRICING["custom_hour"], 2)
@@ -1413,25 +1416,34 @@ def get_admin_html():
                 <div class="form-row">
                     <div class="form-group">
                         <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">License Type</label>
-                        <select id="linkLicenseType" onchange="updateLinkCostPreview()">
+                        <select id="linkLicenseType" onchange="updateLinkTypeOptions(); updateLinkCostPreview()">
                             <option value="trial">Trial License</option>
                             <option value="custom" id="linkCustomOption">Custom License</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">Duration Type</label>
-                        <select id="linkDurationType" onchange="updateLinkCostPreview()">
-                            <option value="hours">Hours</option>
-                            <option value="days">Days</option>
-                            <option value="weeks">Weeks</option>
-                            <option value="months">Months</option>
-                            <option value="years">Years</option>
-                            <option value="unlimited">Unlimited</option>
+                        <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">Duration</label>
+                        <select id="linkDurationSelect" onchange="updateLinkCostPreview()" style="display:block;">
+                            <option value="3">3 Hours (2 credits)</option>
+                            <option value="6">6 Hours (3 credits)</option>
+                            <option value="12">12 Hours (4 credits)</option>
+                            <option value="24">1 Day (5 credits)</option>
+                            <option value="72">3 Days (10 credits)</option>
+                            <option value="168">1 Week (20 credits)</option>
+                            <option value="720">1 Month (50 credits)</option>
+                        </select>
+                        <select id="linkDurationType" onchange="updateLinkCostPreview()" style="display:none;">
+                            <option value="hours">Hours (2 credits/hour)</option>
+                            <option value="days">Days (5 credits/day)</option>
+                            <option value="weeks">Weeks (8 credits/week)</option>
+                            <option value="months">Months (50 credits/month)</option>
+                            <option value="years">Years (800 credits/year)</option>
+                            <option value="unlimited">Unlimited (1500 credits)</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group" id="linkDurationValueGroup" style="display:none;">
                         <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">Duration Value</label>
                         <input type="number" id="linkDurationValue" placeholder="e.g. 1" step="0.5" value="1" oninput="updateLinkCostPreview()">
                     </div>
@@ -1641,7 +1653,7 @@ def get_admin_html():
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainPanel').style.display = 'block';
             loadStats(); loadMyLicenses(); loadHistory(); loadUserRequests(); loadRegistrationLinks();
-            updateLinkCostPreview();
+            updateLinkTypeOptions(); updateLinkCostPreview();
         }} else {{
             document.getElementById('loginError').style.display = 'block';
         }}
@@ -1827,15 +1839,34 @@ def get_admin_html():
         }} else {{ resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${{data.error}}`; }}
     }}
     
+    function updateLinkTypeOptions() {{
+        const licenseType = document.getElementById('linkLicenseType').value;
+        const trialSelect = document.getElementById('linkDurationSelect');
+        const customSelect = document.getElementById('linkDurationType');
+        const valueGroup = document.getElementById('linkDurationValueGroup');
+        if(licenseType === 'trial') {{
+            trialSelect.style.display = 'block';
+            customSelect.style.display = 'none';
+            valueGroup.style.display = 'none';
+        }} else {{
+            trialSelect.style.display = 'none';
+            customSelect.style.display = 'block';
+            valueGroup.style.display = 'block';
+        }}
+        updateLinkCostPreview();
+    }}
+    
     function updateLinkCostPreview() {{
         const licenseType = document.getElementById('linkLicenseType').value;
-        const durationType = document.getElementById('linkDurationType').value;
-        const durationValue = parseFloat(document.getElementById('linkDurationValue').value) || 0;
         let cost = 0;
-        const pricing = {{ trial_hour: 2, custom_hour: 2, custom_day: 5, custom_week: 8, custom_month: 50, custom_year: 800, custom_unlimited: 1500 }};
+        const pricing = {{ custom_hour: 2, custom_day: 5, custom_week: 8, custom_month: 50, custom_year: 800, custom_unlimited: 1500 }};
+        const TRIAL_FIXED = {{3:2, 6:3, 12:4, 24:5, 72:10, 168:20, 720:50}};
         if(licenseType === 'trial') {{
-            cost = Math.round(durationValue * 0.1 * 100) / 100;
+            const hours = parseInt(document.getElementById('linkDurationSelect').value) || 3;
+            cost = TRIAL_FIXED[hours] || 0;
         }} else {{
+            const durationType = document.getElementById('linkDurationType').value;
+            const durationValue = parseFloat(document.getElementById('linkDurationValue').value) || 0;
             if(durationType === 'hours') cost = durationValue * pricing.custom_hour;
             else if(durationType === 'days') cost = durationValue * pricing.custom_day;
             else if(durationType === 'weeks') cost = durationValue * pricing.custom_week;
@@ -1851,11 +1882,19 @@ def get_admin_html():
     
     async function generateRegistrationLink() {{
         const licenseType = document.getElementById('linkLicenseType').value;
-        const durationType = document.getElementById('linkDurationType').value;
-        const durationValue = parseFloat(document.getElementById('linkDurationValue').value);
         const maxDevices = parseInt(document.getElementById('linkMaxDevices').value);
         
-        if(!durationValue || durationValue <= 0) {{
+        let durationType, durationValue;
+        if(licenseType === 'trial') {{
+            const hours = parseInt(document.getElementById('linkDurationSelect').value);
+            durationType = 'hours';
+            durationValue = hours;
+        }} else {{
+            durationType = document.getElementById('linkDurationType').value;
+            durationValue = parseFloat(document.getElementById('linkDurationValue').value);
+        }}
+        
+        if(durationType !== 'unlimited' && (!durationValue || durationValue <= 0)) {{
             alert('Please enter a valid duration value');
             return;
         }}
@@ -3106,7 +3145,9 @@ def generate_trial():
     
     dur = int(data.get("duration_hours", 3))
     max_devices = int(data.get("max_devices", 1))
-    credits_cost = round(dur * 0.1, 2)
+    # Fixed trial pricing by duration
+    TRIAL_FIXED_CREDITS = {3: 2, 6: 3, 12: 4, 24: 5, 72: 10, 168: 20, 720: 50}
+    credits_cost = TRIAL_FIXED_CREDITS.get(dur, round(dur * 0.1, 2))
     
     if auth["role"] != "master":
         if not deduct_credits(auth["username"], credits_cost):
