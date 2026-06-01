@@ -98,29 +98,16 @@ def get_theme_css():
         --input-bg: {theme["input_bg"]};
         --border: {theme["border"]};
     }}
-    body {{ background: var(--bg-gradient); color: var(--text); min-height: 100vh; padding: 20px; transition: all 0.3s ease; }}
+    body {{ background: var(--bg-gradient); color: var(--text); }}
     .card, .stat-card, .result-box, .modal-content, .login-box {{ background: var(--card-bg); backdrop-filter: blur(10px); }}
     input, select, textarea {{ background: var(--input-bg); color: var(--text); border-color: var(--border); }}
     button {{ background: var(--primary); }}
-    button:hover {{ filter: brightness(1.1); transform: translateY(-2px); }}
+    button:hover {{ filter: brightness(1.1); }}
     .tab {{ background: rgba(255,255,255,0.1); color: var(--text); }}
     .tab.active {{ background: var(--primary); }}
-    .stat-card:hover {{ transform: translateY(-5px); transition: 0.3s; cursor: pointer; }}
+    .stat-card:hover {{ transform: translateY(-5px); transition: 0.3s; }}
     th {{ background: {theme["primary"]}40; }}
     tr:hover {{ background: rgba(255,255,255,0.05); }}
-    .pre-style {{ font-family: monospace; white-space: pre; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; }}
-    .copy-btn {{ background: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; margin-left: 5px; cursor: pointer; display: inline-block; }}
-    .btn-danger {{ background: var(--danger); }}
-    .btn-success {{ background: var(--secondary); }}
-    .btn-warning {{ background: var(--warning); }}
-    .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }}
-    .modal-content {{ margin: 5% auto; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; }}
-    .close {{ float: right; font-size: 28px; cursor: pointer; }}
-    .tabs {{ display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 20px; }}
-    .content {{ display: none; border-radius: 15px; padding: 25px; }}
-    .content.active {{ display: block; }}
-    .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }}
-    .stat-number {{ font-size: 28px; font-weight: bold; color: var(--primary); }}
     """
     
 THEME_SELECTOR_HTML = """
@@ -141,6 +128,7 @@ function changeTheme(theme) {
         body: JSON.stringify({theme: theme})
     }).then(() => location.reload());
 }
+document.getElementById('themeSelect').value = '""" + CURRENT_THEME + """';
 </script>
 """
 
@@ -218,7 +206,7 @@ def load_data():
                 LICENSE_HISTORY = data.get("license_history", [])
                 USER_REQUESTS = data.get("user_requests", [])
                 CURRENT_THEME = data.get("theme", "dark")
-            print(f"✅ DATA LOADED")
+            print(f"✅ DATA LOADED: {len(LICENSE_HISTORY)} licenses, {len(USER_REQUESTS)} requests")
         except Exception as e:
             print(f"⚠️ LOAD ERROR: {e}")
             reset_data()
@@ -255,6 +243,7 @@ def save_data():
     try:
         with open(DATA_FILE, "w") as f:
             json.dump(data, f, indent=2, default=str)
+        print("💾 DATA SAVED SUCCESSFULLY")
     except Exception as e:
         print(f"❌ SAVE ERROR: {e}")
 
@@ -446,29 +435,43 @@ monitor_thread.start()
 # ==================================================
 # 🎨 ADMIN PANEL HTML
 # ==================================================
-ADMIN_HTML = """
+def get_admin_html():
+    return f"""
 <!DOCTYPE html>
 <html>
 <head>
     <title>JEPFX ADMIN PANEL</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        """ + get_theme_css() + """
-        .container { max-width: 1400px; margin: 0 auto; }
-        .login-box { max-width: 400px; margin: 100px auto; padding: 30px; border-radius: 15px; text-align: center; }
-        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 8px; }
-        .login-box button { padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .panel { display: none; }
-        .header { border-radius: 15px; padding: 20px; margin-bottom: 20px; }
-        .result-box { padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 3px solid var(--primary); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; display: block; overflow-x: auto; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-        .master-only { border-left: 3px solid var(--danger); padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
-        .badge-pending { background: var(--warning); }
-        .badge-approved { background: var(--secondary); }
-        .badge-rejected { background: var(--danger); }
+        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }}
+        {get_theme_css()}
+        body {{ min-height: 100vh; padding: 20px; transition: all 0.3s ease; }}
+        .container {{ max-width: 1400px; margin: 0 auto; }}
+        .login-box {{ max-width: 400px; margin: 100px auto; padding: 30px; border-radius: 15px; text-align: center; }}
+        .login-box input {{ width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 8px; }}
+        .login-box button {{ padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }}
+        .panel {{ display: none; }}
+        .header {{ border-radius: 15px; padding: 20px; margin-bottom: 20px; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }}
+        .stat-card {{ padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s; }}
+        .stat-number {{ font-size: 28px; font-weight: bold; color: var(--primary); }}
+        .tabs {{ display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 20px; }}
+        .tab {{ padding: 10px 18px; border-radius: 8px; cursor: pointer; border: none; font-size: 14px; transition: 0.3s; }}
+        .content {{ display: none; border-radius: 15px; padding: 25px; }}
+        .content.active {{ display: block; }}
+        input, select, textarea {{ width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; outline: none; }}
+        button {{ border: none; border-radius: 8px; cursor: pointer; margin: 5px; padding: 10px 20px; transition: 0.3s; font-weight: bold; }}
+        .btn-danger {{ background: var(--danger); }}
+        .btn-success {{ background: var(--secondary); }}
+        .btn-warning {{ background: var(--warning); }}
+        .result-box {{ padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 3px solid var(--primary); }}
+        .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }}
+        .modal-content {{ margin: 5% auto; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; }}
+        .close {{ float: right; font-size: 28px; cursor: pointer; }}
+        .master-only {{ border-left: 3px solid var(--danger); padding: 10px; margin: 10px 0; border-radius: 5px; }}
+        .copy-btn {{ background: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; margin-left: 5px; cursor: pointer; display: inline-block; }}
+        .badge {{ display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; }}
+        .pre-style {{ font-family: monospace; white-space: pre; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; }}
     </style>
 </head>
 <body>
@@ -524,35 +527,41 @@ ADMIN_HTML = """
         </div>
         
         <div id="customActivation" class="content">
-            <h2>✨ Custom Activation</h2>
-            <input type="text" id="customUsername" placeholder="Username">
-            <input type="text" id="customPassword" placeholder="Password">
-            <input type="text" id="customLicense" placeholder="License Key">
+            <h2>✨ Custom Activation (Multi-PC)</h2>
+            <input type="text" id="customUsername" placeholder="Username *">
+            <input type="text" id="customPassword" placeholder="Password *">
+            <input type="text" id="customLicense" placeholder="License Key *">
             <select id="customDurationType">
-                <option value="hours">Hours</option>
-                <option value="days">Days</option>
-                <option value="weeks">Weeks</option>
-                <option value="months">Months</option>
-                <option value="unlimited">Unlimited</option>
+                <option value="hours">Hours (2 credits/hour)</option>
+                <option value="days">Days (5 credit/day)</option>
+                <option value="weeks">Weeks (8 credits/week)</option>
+                <option value="months">Months (50 credits/month)</option>
+                <option value="years">Years (800 credits/year)</option>
+                <option value="unlimited">Unlimited (1500 credits)</option>
             </select>
-            <input type="number" id="customDurationValue" placeholder="Duration value">
-            <input type="number" id="customMaxDevices" placeholder="Max devices" value="1">
-            <button onclick="createCustomActivation()">CREATE</button>
+            <input type="number" id="customDurationValue" placeholder="Duration value" step="0.5">
+            <input type="number" id="customMaxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="100">
+            <button onclick="createCustomActivation()">CREATE ACTIVATION</button>
             <div id="customResult" class="result-box" style="display: none;"></div>
         </div>
         
         <div id="permanentLicense" class="content">
-            <h2>🔑 Permanent License</h2>
-            <input type="text" id="permLicenseKey" placeholder="License Key">
+            <h2>🔑 Permanent License (50 Credits)</h2>
+            <input type="text" id="permLicenseKey" placeholder="License Key *">
             <input type="text" id="permUsername" placeholder="Username (optional)">
             <input type="text" id="permPassword" placeholder="Password (optional)">
-            <input type="number" id="permMaxDevices" placeholder="Max devices" value="1">
-            <button onclick="createPermanentLicense()">CREATE</button>
+            <input type="number" id="permMaxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="100">
+            <button onclick="createPermanentLicense()">CREATE PERMANENT</button>
             <div id="permResult" class="result-box" style="display: none;"></div>
         </div>
         
         <div id="myLicenses" class="content">
-            <h2>📋 My Licenses</h2>
+            <h2>📋 My Active Licenses</h2>
+            <div style="margin-bottom: 10px;">
+                <button onclick="showLicenseType('trials')">Trial</button>
+                <button id="showCustomBtn" onclick="showLicenseType('custom')">Custom</button>
+                <button id="showPermanentBtn" style="display: none;" onclick="showLicenseType('permanent')">Permanent</button>
+            </div>
             <div id="myTrialsList"></div>
             <div id="myCustomList" style="display: none;"></div>
             <div id="myPermanentList" style="display: none;"></div>
@@ -566,24 +575,50 @@ ADMIN_HTML = """
         
         <div id="history" class="content">
             <h2>📜 License History</h2>
-            <input type="text" id="historySearch" placeholder="Search..." onkeyup="filterHistory()">
+            <input type="text" id="historySearch" placeholder="Search..." onkeyup="filterHistory()" style="width: 100%;">
             <button onclick="loadHistory()">REFRESH</button>
+            <button onclick="exportHistory()">📥 EXPORT CSV</button>
             <div id="historyList"></div>
         </div>
         
         <div id="admins" class="content">
             <div class="master-only"><h2>👑 MASTER CONTROL</h2></div>
-            <h3>➕ Add Admin/Mod</h3>
+            <h3>➕ Add User</h3>
             <input type="text" id="newAdminUser" placeholder="Username">
             <input type="password" id="newAdminPass" placeholder="Password">
-            <select id="newAdminRole"><option value="admin">Admin</option><option value="moderator">Moderator</option></select>
-            <input type="number" id="newAdminCredits" placeholder="Credits" value="100">
-            <button onclick="addAdmin()">ADD</button>
+            <select id="newAdminRole">
+                <option value="admin">Admin (Trial + Custom)</option>
+                <option value="moderator">Moderator (Trial only)</option>
+            </select>
+            <input type="number" id="newAdminCredits" placeholder="Initial Credits" value="100" step="0.5">
+            <button onclick="addAdmin()">ADD USER</button>
+            
+            <h3>🔄 Change Role</h3>
+            <input type="text" id="roleChangeUser" placeholder="Username">
+            <select id="newRoleSelect">
+                <option value="admin">Admin (Trial + Custom)</option>
+                <option value="moderator">Moderator (Trial only)</option>
+            </select>
+            <button onclick="changeUserRole()">CHANGE ROLE</button>
+            
+            <h3>🔑 Change Password</h3>
+            <input type="text" id="targetUsername" placeholder="Username">
+            <input type="password" id="newPasswordForTarget" placeholder="New Password">
+            <button class="btn-warning" onclick="changeOtherPassword()">CHANGE PASSWORD</button>
+            
+            <h3>💰 Credits</h3>
+            <input type="text" id="creditUsername" placeholder="Username">
+            <input type="number" id="creditAmount" placeholder="Amount" step="0.5">
+            <button onclick="manageCredits()">UPDATE CREDITS</button>
+            
+            <h3>📋 Admins</h3>
             <div id="adminsList"></div>
+            <h3>📋 Moderators</h3>
+            <div id="moderatorsList"></div>
         </div>
         
         <div id="changePassword" class="content">
-            <h2>🔐 Change Password</h2>
+            <h2>🔐 Change Your Password</h2>
             <input type="password" id="oldPassword" placeholder="Current Password">
             <input type="password" id="newPassword" placeholder="New Password">
             <input type="password" id="confirmPassword" placeholder="Confirm Password">
@@ -604,47 +639,57 @@ ADMIN_HTML = """
         <span class="close" onclick="closeModal()">&times;</span>
         <h2 id="modalTitle">🔑 License Credentials</h2>
         <div id="modalBody"></div>
-        <button class="btn-success" onclick="copyStyledCredentials()">📋 COPY STYLIZED</button>
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn-success" onclick="copyStyledCredentials()">📋 COPY STYLIZED</button>
+            <button onclick="closeModal()">Close</button>
+        </div>
     </div>
 </div>
 
-""" + THEME_SELECTOR_HTML + """
+{THEME_SELECTOR_HTML}
 
 <script>
+    const API_URL = window.location.origin;
     let currentUser = null, currentRole = null;
-    let lastGenerated = null;
+    let lastGeneratedData = null;
     
-    async function login() {
+    async function login() {{
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
-        const res = await fetch('/api/admin/login', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
+        const res = await fetch(API_URL + '/api/admin/login', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{username: username, password: password}})
+        }});
         const data = await res.json();
-        if(data.success) {
-            currentUser = username;
-            currentRole = data.role;
-            document.getElementById('currentUser').innerHTML = username;
-            document.getElementById('currentRole').innerHTML = data.role;
-            document.getElementById('currentCredits').innerHTML = data.credits || 'Unlimited';
-            if(data.role === 'master') {
+        if(data.success) {{
+            currentUser = username; currentRole = data.role;
+            document.getElementById('currentUser').textContent = username;
+            document.getElementById('currentRole').textContent = data.role.toUpperCase();
+            document.getElementById('currentCredits').textContent = data.credits || 'Unlimited';
+            
+            if(data.role === 'master') {{
                 document.getElementById('adminTab').style.display = 'block';
                 document.getElementById('permanentTab').style.display = 'block';
+                document.getElementById('showPermanentBtn').style.display = 'inline-block';
                 document.getElementById('statPermanentCard').style.display = 'block';
-            } else if(data.role === 'admin') {
+            }} else if(data.role === 'admin') {{
                 document.getElementById('customTab').style.display = 'inline-block';
+                document.getElementById('showCustomBtn').style.display = 'inline-block';
                 document.getElementById('statCustomCard').style.display = 'block';
-            }
+            }} else {{
+                document.getElementById('customTab').style.display = 'none';
+                document.getElementById('showCustomBtn').style.display = 'none';
+                document.getElementById('statCustomCard').style.display = 'none';
+            }}
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainPanel').style.display = 'block';
             loadStats(); loadMyLicenses(); loadHistory(); loadUserRequests();
-        } else {
+        }} else {{
             document.getElementById('loginError').style.display = 'block';
-        }
-    }
+        }}
+    }}
     
-    function switchTab(tabId) {
+    function switchTab(tabId) {{
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         event.target.classList.add('active');
@@ -654,285 +699,493 @@ ADMIN_HTML = """
         if(tabId === 'history') loadHistory();
         if(tabId === 'admins' && currentRole === 'master') loadAdmins();
         if(tabId === 'monitor') loadMonitor();
-    }
+    }}
     
-    async function loadStats() {
-        const res = await fetch('/api/admin/get-stats', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value})
-        });
+    function showLicenseType(type) {{
+        document.getElementById('myTrialsList').style.display = 'none';
+        document.getElementById('myCustomList').style.display = 'none';
+        document.getElementById('myPermanentList').style.display = 'none';
+        if(type === 'trials') document.getElementById('myTrialsList').style.display = 'block';
+        if(type === 'custom') document.getElementById('myCustomList').style.display = 'block';
+        if(type === 'permanent') document.getElementById('myPermanentList').style.display = 'block';
+    }}
+    
+    async function loadStats() {{
+        const res = await fetch(API_URL + '/api/admin/get-stats', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
         const data = await res.json();
-        if(data.success) {
-            document.getElementById('statTrials').innerHTML = data.trials;
-            document.getElementById('statCustom').innerHTML = data.custom || 0;
-            document.getElementById('statPermanent').innerHTML = data.permanent || 0;
-            document.getElementById('statHistory').innerHTML = data.history_count || 0;
-            document.getElementById('statRequests').innerHTML = data.pending_requests || 0;
-            document.getElementById('currentCredits').innerHTML = data.user_credits || 'Unlimited';
-        }
-    }
+        if(data.success) {{
+            document.getElementById('statTrials').textContent = data.trials;
+            document.getElementById('statCustom').textContent = data.custom || 0;
+            document.getElementById('statPermanent').textContent = data.permanent || 0;
+            document.getElementById('statHistory').textContent = data.history_count || 0;
+            document.getElementById('statRequests').textContent = data.pending_requests || 0;
+            document.getElementById('currentCredits').textContent = data.user_credits || 'Unlimited';
+        }}
+    }}
     
-    function formatHours(hours) {
+    function formatDurationHours(hours) {{
         if(hours >= 720) return Math.floor(hours/720) + ' MONTHS';
         if(hours >= 168) return Math.floor(hours/168) + ' WEEKS';
         if(hours >= 24) return Math.floor(hours/24) + ' DAYS';
         return hours + ' HOURS';
-    }
+    }}
     
-    function getStyledText(license, user, pass, duration, devices, type) {
-        return `✅ ${type} CREATED\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n🔑 LICENSE: ${license}\\n👤 USER: ${user}\\n🔒 PASS: ${pass}\\n⏱️ TIME: ${duration}\\n💻 MAX DEVICES: ${devices}\\n🌐 CHECK STATUS: jepfx-tool-server.onrender.com/user\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n⚠️ License activates ONLY on first use!`;
-    }
+    function getStyledCredentials(licenseKey, username, password, durationText, maxDevices, licenseType) {{
+        return `✅ ${{licenseType}} CREATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔑 LICENSE: ${{licenseKey}}
+👤 USER: ${{username}}
+🔒 PASS: ${{password}}
+⏱️ TIME: ${{durationText}}
+💻 MAX DEVICES: ${{maxDevices}}
+🌐 CHECK STATUS: jepfx-tool-server.onrender.com/user
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ License activates ONLY on first use!`;
+    }}
     
-    function showModal(license, user, pass, duration, devices, type) {
-        lastGenerated = {license, user, pass, duration, devices, type};
-        const styled = getStyledText(license, user, pass, duration, devices, type);
-        document.getElementById('modalBody').innerHTML = `<div class="pre-style">${styled.replace(/\\n/g, '<br>')}</div>`;
-        document.getElementById('credsModal').style.display = 'block';
-    }
+    function showCredentialsModal(licenseKey, username, password, durationText, maxDevices, licenseType) {{
+        lastGeneratedData = {{licenseKey, username, password, durationText, maxDevices, licenseType}};
+        const styledText = getStyledCredentials(licenseKey, username, password, durationText, maxDevices, licenseType);
+        const modal = document.getElementById('credsModal');
+        document.getElementById('modalTitle').innerHTML = '🔑 LICENSE GENERATED';
+        document.getElementById('modalBody').innerHTML = `
+            <div class="pre-style">${{styledText.replace(/\\n/g, '<br>')}}</div>
+            <div style="margin-top: 15px; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px;">
+                <p style="font-size: 13px;">✅ License saved in history<br>✅ You can find it in "MY LICENSES" tab</p>
+            </div>
+        `;
+        modal.style.display = 'block';
+    }}
     
-    function copyStyledCredentials() {
-        if(lastGenerated) {
-            const text = getStyledText(lastGenerated.license, lastGenerated.user, lastGenerated.pass, lastGenerated.duration, lastGenerated.devices, lastGenerated.type);
-            navigator.clipboard.writeText(text);
-            alert('✓ Copied!');
-        }
-    }
+    function copyStyledCredentials() {{
+        if(!lastGeneratedData) return;
+        const text = getStyledCredentials(
+            lastGeneratedData.licenseKey, 
+            lastGeneratedData.username, 
+            lastGeneratedData.password, 
+            lastGeneratedData.durationText, 
+            lastGeneratedData.maxDevices, 
+            lastGeneratedData.licenseType
+        );
+        navigator.clipboard.writeText(text);
+        alert('✓ Credentials copied to clipboard!');
+    }}
     
-    async function generateTrial() {
+    function copyToClipboard(text) {{ navigator.clipboard.writeText(text); alert('Copied!'); }}
+    
+    async function generateTrial() {{
         const duration = document.getElementById('trialDuration').value;
-        const devices = document.getElementById('maxDevices').value;
-        const res = await fetch('/api/admin/generate-trial', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, duration_hours: parseInt(duration), max_devices: parseInt(devices)})
-        });
+        const maxDevices = document.getElementById('maxDevices').value;
+        const res = await fetch(API_URL + '/api/admin/generate-trial', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{
+                admin_username: currentUser, 
+                admin_password: document.getElementById('loginPassword').value, 
+                duration_hours: parseInt(duration),
+                max_devices: parseInt(maxDevices)
+            }})
+        }});
         const data = await res.json();
-        if(data.success) {
-            showModal(data.license_key, data.username, data.password, formatHours(parseInt(duration)), devices, 'TRIAL');
-            document.getElementById('trialResult').innerHTML = `✅ Created! Credits used: ${data.credits_used}`;
+        const resultDiv = document.getElementById('trialResult');
+        resultDiv.style.display = 'block';
+        if(data.success) {{
+            const durationText = formatDurationHours(parseInt(duration));
+            showCredentialsModal(data.license_key, data.username, data.password, durationText, maxDevices, 'TRIAL');
+            resultDiv.innerHTML = `✅ TRIAL LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
             loadStats(); loadMyLicenses(); loadHistory();
-        } else {
-            document.getElementById('trialResult').innerHTML = `❌ ${data.error}`;
-        }
-        document.getElementById('trialResult').style.display = 'block';
-    }
+        }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
+    }}
     
-    async function createCustomActivation() {
+    async function createCustomActivation() {{
+        if(currentRole === 'moderator') {{ alert('Moderators cannot create Custom licenses!'); return; }}
         const username = document.getElementById('customUsername').value;
         const password = document.getElementById('customPassword').value;
         const license = document.getElementById('customLicense').value;
         const durationType = document.getElementById('customDurationType').value;
-        const durationValue = document.getElementById('customDurationValue').value;
-        const devices = document.getElementById('customMaxDevices').value;
-        if(!username || !password || !license) { alert('Fill all fields'); return; }
-        const res = await fetch('/api/admin/create-custom-activation', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, username, password, license_key: license, duration_type: durationType, duration_value: parseFloat(durationValue), max_devices: parseInt(devices)})
-        });
+        const durationValue = parseFloat(document.getElementById('customDurationValue').value);
+        const maxDevices = document.getElementById('customMaxDevices').value;
+        if(!username || !password || !license) {{ alert('Fill all fields!'); return; }}
+        const res = await fetch(API_URL + '/api/admin/create-custom-activation', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{
+                admin_username: currentUser, 
+                admin_password: document.getElementById('loginPassword').value, 
+                username, password, 
+                license_key: license, 
+                duration_type: durationType, 
+                duration_value: durationValue,
+                max_devices: parseInt(maxDevices)
+            }})
+        }});
         const data = await res.json();
-        if(data.success) {
-            showModal(license, username, password, durationValue + ' ' + durationType, devices, 'CUSTOM');
-            document.getElementById('customResult').innerHTML = `✅ Created!`;
+        const resultDiv = document.getElementById('customResult');
+        resultDiv.style.display = 'block';
+        if(data.success) {{
+            let durationText = '';
+            if(durationType === 'unlimited') durationText = 'UNLIMITED';
+            else durationText = durationValue + ' ' + durationType.toUpperCase();
+            showCredentialsModal(license, username, password, durationText, maxDevices, 'CUSTOM');
+            resultDiv.innerHTML = `✅ CUSTOM LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
+            document.getElementById('customUsername').value = '';
+            document.getElementById('customPassword').value = '';
+            document.getElementById('customLicense').value = '';
+            document.getElementById('customDurationValue').value = '';
             loadStats(); loadMyLicenses(); loadHistory();
-        } else {
-            document.getElementById('customResult').innerHTML = `❌ ${data.error}`;
-        }
-        document.getElementById('customResult').style.display = 'block';
-    }
+        }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
+    }}
     
-    async function createPermanentLicense() {
+    async function createPermanentLicense() {{
+        if(currentRole !== 'master') {{ alert('Only Master can create Permanent licenses!'); return; }}
         const license = document.getElementById('permLicenseKey').value;
         const username = document.getElementById('permUsername').value;
         const password = document.getElementById('permPassword').value;
-        const devices = document.getElementById('permMaxDevices').value;
-        if(!license) { alert('License key required'); return; }
-        const res = await fetch('/api/admin/create-permanent-license', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, license_key: license, username, password, max_devices: parseInt(devices)})
-        });
+        const maxDevices = document.getElementById('permMaxDevices').value;
+        if(!license) {{ alert('License key required!'); return; }}
+        const res = await fetch(API_URL + '/api/admin/create-permanent-license', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{
+                admin_username: currentUser, 
+                admin_password: document.getElementById('loginPassword').value, 
+                license_key: license, 
+                username, password,
+                max_devices: parseInt(maxDevices)
+            }})
+        }});
         const data = await res.json();
-        if(data.success) {
-            showModal(license, username || 'N/A', password || 'N/A', 'PERMANENT', devices, 'PERMANENT');
-            document.getElementById('permResult').innerHTML = `✅ Created!`;
+        const resultDiv = document.getElementById('permResult');
+        resultDiv.style.display = 'block';
+        if(data.success) {{
+            showCredentialsModal(license, username || 'N/A', password || 'N/A', 'PERMANENT (NEVER EXPIRES)', maxDevices, 'PERMANENT');
+            resultDiv.innerHTML = `✅ PERMANENT LICENSE CREATED!<br>💰 Remaining: ${{data.remaining_credits}}`;
+            document.getElementById('permLicenseKey').value = '';
+            document.getElementById('permUsername').value = '';
+            document.getElementById('permPassword').value = '';
             loadStats(); loadMyLicenses(); loadHistory();
-        } else {
-            document.getElementById('permResult').innerHTML = `❌ ${data.error}`;
-        }
-        document.getElementById('permResult').style.display = 'block';
-    }
+        }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
+    }}
     
-    async function loadMyLicenses() {
-        const res = await fetch('/api/admin/get-my-trials', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value})
-        });
+    async function loadMyLicenses() {{
+        await loadMyTrials();
+        if(currentRole !== 'moderator') await loadMyCustom();
+        if(currentRole === 'master') await loadMyPermanent();
+    }}
+    
+    async function loadMyTrials() {{
+        const res = await fetch(API_URL + '/api/admin/get-my-trials', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
         const data = await res.json();
-        let html = '<table><tr><th>License</th><th>Max Devices</th><th>Used</th><th>Activated</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
-        data.trials.forEach(t => {
-            html += `<tr><td>${t.license_key}</td><td>${t.max_devices}</td><td>${t.hwid_count}</td><td>${t.activated ? '✅' : '⏳'}</td><td>${t.expires_at}</td><td>${t.status}</td><td><button class="btn-danger" onclick="deleteTrial('${t.license_key}')">Delete</button></td></tr>`;
-        });
+        let html = '能懈<table><th>License</th><th>Max Devices</th><th>Used</th><th>Activated</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
+        data.trials.forEach(t => {{
+            html += `<tr>
+                <td>${{t.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{t.license_key}}')">Copy</button></td>
+                <td>${{t.max_devices || 1}}</td>
+                <td>${{t.hwid_count || 0}}</td>
+                <td>${{t.activated ? '✅ Yes' : '⏳ No'}}</td>
+                <td>${{t.expires_at || '-'}}</td>
+                <td>${{t.status}}</td>
+                <td><button class="btn-danger" onclick="deleteTrial('${{t.license_key}}')">Delete</button></td>
+            </tr>`;
+        }});
         html += '</table>';
         document.getElementById('myTrialsList').innerHTML = html;
-    }
+    }}
     
-    async function loadHistory() {
-        const res = await fetch('/api/admin/get-history', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value})
-        });
+    async function loadMyCustom() {{
+        const res = await fetch(API_URL + '/api/admin/get-my-custom', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
         const data = await res.json();
-        let html = '能懈<tr><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr>';
-        data.history.forEach(h => {
-            html += `<tr><td>${new Date(h.created_at).toLocaleString()}</td><td>${h.license_key}</td><td>${h.username}</td><td>${h.password}</td><td>${h.type}</td><td>${h.owner}</td><td>${h.expires_at}</td><td><button onclick="showHistoryCreds('${h.license_key}', '${h.username}', '${h.password}', '${h.type}')">View</button></td></tr>`;
-        });
+        let html = '能懈<table><th>License</th><th>Username</th><th>Password</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
+        data.activations.forEach(a => {{
+            html += `<tr>
+                <td>${{a.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{a.license_key}}')">Copy</button></td>
+                <td>${{a.username}} <button class="copy-btn" onclick="copyToClipboard('${{a.username}}')">Copy</button></td>
+                <td>${{a.password}} <button class="copy-btn" onclick="copyToClipboard('${{a.password}}')">Copy</button></td>
+                <td>${{a.max_devices || 1}}</td>
+                <td>${{a.hwids ? a.hwids.length : 0}}</td>
+                <td>${{a.expires_at || 'NEVER'}}</td>
+                <td class="${{a.status === 'ACTIVE' ? 'success' : 'warning'}}">${{a.status}}</td>
+                <td><button class="btn-danger" onclick="deleteCustomActivation('${{a.license_key}}')">Delete</button></td>
+            </tr>`;
+        }});
         html += '</table>';
-        document.getElementById('historyList').innerHTML = html;
-    }
+        document.getElementById('myCustomList').innerHTML = html;
+    }}
     
-    function showHistoryCreds(license, user, pass, type) {
-        const styled = `📜 HISTORY LICENSE\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n🔑 LICENSE: ${license}\\n👤 USER: ${user}\\n🔒 PASS: ${pass}\\n📋 TYPE: ${type}\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-        document.getElementById('modalBody').innerHTML = `<div class="pre-style">${styled.replace(/\\n/g, '<br>')}</div>`;
-        document.getElementById('credsModal').style.display = 'block';
-    }
-    
-    function filterHistory() {
-        const search = document.getElementById('historySearch').value.toLowerCase();
-        const rows = document.querySelectorAll('#historyList tr');
-        rows.forEach((row, i) => { if(i > 0) row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none'; });
-    }
-    
-    async function loadUserRequests() {
-        const res = await fetch('/api/admin/get-requests', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value})
-        });
+    async function loadMyPermanent() {{
+        const res = await fetch(API_URL + '/api/admin/get-my-permanent', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
         const data = await res.json();
-        let html = '能懈<tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Status</th><th>Action</th></tr>';
-        data.requests.forEach((req, idx) => {
-            html += `<tr><td>${new Date(req.created_at).toLocaleString()}</td><td>${req.license_key}</td><td>${req.username}</td><td>${req.request_type}</td><td>${req.message.substring(0, 50)}</td><td><span class="badge badge-${req.status}">${req.status}</span></td><td>${req.status === 'pending' ? `<button class="btn-success" onclick="approveRequest(${idx})">Approve</button> <button class="btn-danger" onclick="rejectRequest(${idx})">Reject</button>` : '-'}</td></tr>`;
-        });
+        let html = '能懈<table><th>License</th><th>Username</th><th>Max Devices</th><th>Used</th><th>Status</th><th>Action</th></tr>';
+        data.licenses.forEach(l => {{
+            html += `<tr>
+                <td>${{l.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{l.license_key}}')">Copy</button></td>
+                <td>${{l.username || '-'}}</td>
+                <td>${{l.max_devices || 1}}</td>
+                <td>${{l.hwids ? l.hwids.length : 0}}</td>
+                <td>${{l.status}}</td>
+                <td><button class="btn-danger" onclick="deletePermanentLicense('${{l.license_key}}')">Delete</button></td>
+            </tr>`;
+        }});
+        html += '</table>';
+        document.getElementById('myPermanentList').innerHTML = html;
+    }}
+    
+    async function loadUserRequests() {{
+        const res = await fetch(API_URL + '/api/admin/get-requests', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
+        const data = await res.json();
+        let html = '能懈<tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr>';
+        data.requests.forEach((req, idx) => {{
+            html += `<tr>
+                <td>${{new Date(req.created_at).toLocaleString()}}</td>
+                <td>${{req.license_key}}</td>
+                <td>${{req.username}}</td>
+                <td>${{req.request_type}}</td>
+                <td>${{req.message.substring(0, 50)}}...</td>
+                <td>${{req.contact || '-'}}</td>
+                <td><span class="badge badge-${{req.status}}">${{req.status}}</span></td>
+                <td>${{req.status === 'pending' ? `<button class="btn-success" onclick="approveRequest(${{idx}}, '${{req.license_key}}', '${{req.request_type}}', ${{req.days_requested || 7}})">Approve</button>
+                    <button class="btn-danger" onclick="rejectRequest(${{idx}})">Reject</button>` : '-'}}</td>
+            </tr>`;
+        }});
         html += '</table>';
         document.getElementById('requestsList').innerHTML = html;
-    }
+    }}
     
-    async function approveRequest(idx) {
-        const res = await fetch('/api/admin/approve-request', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, request_index: idx})
-        });
-        if((await res.json()).success) { loadUserRequests(); loadStats(); alert('Approved!'); }
-    }
-    
-    async function rejectRequest(idx) {
-        const res = await fetch('/api/admin/reject-request', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, request_index: idx})
-        });
-        if((await res.json()).success) { loadUserRequests(); alert('Rejected!'); }
-    }
-    
-    async function loadAdmins() {
-        const res = await fetch('/api/admin/get-admins', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value})
-        });
+    async function approveRequest(idx, licenseKey, reqType, days) {{
+        if(!confirm(`Approve request for ${{licenseKey}}?`)) return;
+        const res = await fetch(API_URL + '/api/admin/approve-request', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, request_index: idx, license_key: licenseKey, request_type: reqType, days_to_add: days}})
+        }});
         const data = await res.json();
-        let html = '能懈<tr><th>Username</th><th>Credits</th><th>Action</th></tr>';
-        data.admins.forEach(a => { html += `<tr><td>${a.username}</td><td>${a.credits}</td><td><button class="btn-danger" onclick="deleteAdmin('${a.username}')">Delete</button></td></tr>`; });
-        html += '</table>';
-        document.getElementById('adminsList').innerHTML = html;
-    }
+        if(data.success) {{ alert('Approved!'); loadUserRequests(); loadStats(); }}
+        else {{ alert('Error: ' + data.error); }}
+    }}
     
-    async function addAdmin() {
+    async function rejectRequest(idx) {{
+        if(!confirm('Reject this request?')) return;
+        const res = await fetch(API_URL + '/api/admin/reject-request', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, request_index: idx}})
+        }});
+        const data = await res.json();
+        if(data.success) {{ alert('Rejected!'); loadUserRequests(); }}
+        else {{ alert('Error: ' + data.error); }}
+    }}
+    
+    async function loadHistory() {{
+        const res = await fetch(API_URL + '/api/admin/get-history', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
+        const data = await res.json();
+        let html = '能懈<table><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr>';
+        data.history.forEach(h => {{
+            html += `<tr>
+                <td>${{new Date(h.created_at).toLocaleString()}}</td>
+                <td><strong>${{h.license_key}}</strong> <button class="copy-btn" onclick="copyToClipboard('${{h.license_key}}')">Copy</button></td>
+                <td>${{h.username}} <button class="copy-btn" onclick="copyToClipboard('${{h.username}}')">Copy</button></td>
+                <td>${{h.password}} <button class="copy-btn" onclick="copyToClipboard('${{h.password}}')">Copy</button></td>
+                <td>${{h.type}}</td>
+                <td>${{h.owner}}</td>
+                <td>${{h.expires_at || 'NEVER'}}</td>
+                <td><button onclick="showHistoryCredentials('${{h.license_key}}', '${{h.username}}', '${{h.password}}', '${{h.type}}', '${{h.expires_at}}')">View</button></td>
+            </tr>`;
+        }});
+        html += '</table>';
+        document.getElementById('historyList').innerHTML = html;
+    }}
+    
+    function showHistoryCredentials(licenseKey, username, password, type, expires) {{
+        const styledText = `📜 LICENSE FROM HISTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔑 LICENSE: ${{licenseKey}}
+👤 USER: ${{username}}
+🔒 PASS: ${{password}}
+📋 TYPE: ${{type}}
+⏰ EXPIRES: ${{expires || 'NEVER'}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        const modal = document.getElementById('credsModal');
+        document.getElementById('modalTitle').innerHTML = '📜 History Credentials';
+        document.getElementById('modalBody').innerHTML = `<div class="pre-style">${{styledText.replace(/\\n/g, '<br>')}}</div>`;
+        modal.style.display = 'block';
+    }}
+    
+    function filterHistory() {{
+        const search = document.getElementById('historySearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#historyList tr');
+        rows.forEach((row, i) => {{ if(i > 0) row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none'; }});
+    }}
+    
+    async function exportHistory() {{
+        window.open(API_URL + '/api/admin/export-history?admin_username=' + currentUser + '&admin_password=' + document.getElementById('loginPassword').value);
+    }}
+    
+    async function loadAdmins() {{
+        const res = await fetch(API_URL + '/api/admin/get-admins', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
+        const data = await res.json();
+        let adminsHtml = '能懈</table><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
+        data.admins.forEach(a => {{ adminsHtml += `<tr><td>${{a.username}}</td><td>${{a.credits}}</td><td>${{a.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteAdmin('${{a.username}}')">Delete</button></td></tr>`; }});
+        adminsHtml += '</table>';
+        document.getElementById('adminsList').innerHTML = adminsHtml;
+        
+        let modsHtml = '能懈<table><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
+        data.moderators.forEach(m => {{ modsHtml += `<tr><td>${{m.username}}</td><td>${{m.credits}}</td><td>${{m.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteModerator('${{m.username}}')">Delete</button></td></tr>`; }});
+        modsHtml += '</table>';
+        document.getElementById('moderatorsList').innerHTML = modsHtml;
+    }}
+    
+    async function addAdmin() {{
         const username = document.getElementById('newAdminUser').value;
         const password = document.getElementById('newAdminPass').value;
         const role = document.getElementById('newAdminRole').value;
-        const credits = document.getElementById('newAdminCredits').value;
-        const res = await fetch('/api/admin/add-admin', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, new_username: username, new_password: password, role: role, credits: parseFloat(credits)})
-        });
-        if((await res.json()).success) { loadAdmins(); alert('Added!'); }
-    }
+        const credits = parseFloat(document.getElementById('newAdminCredits').value);
+        const res = await fetch(API_URL + '/api/admin/add-admin', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, new_username: username, new_password: password, role: role, credits: credits}})
+        }});
+        const data = await res.json();
+        if(data.success) {{ alert('User added!'); loadAdmins(); }}
+        else {{ alert('Error: ' + data.error); }}
+    }}
     
-    async function changePassword() {
+    async function changeUserRole() {{
+        const username = document.getElementById('roleChangeUser').value;
+        const newRole = document.getElementById('newRoleSelect').value;
+        const res = await fetch(API_URL + '/api/admin/change-role', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, target_username: username, new_role: newRole}})
+        }});
+        const data = await res.json();
+        if(data.success) {{ alert(`Role changed to ${{newRole}}!`); loadAdmins(); }}
+        else {{ alert('Error: ' + data.error); }}
+    }}
+    
+    async function changeOtherPassword() {{
+        const targetUser = document.getElementById('targetUsername').value;
+        const newPass = document.getElementById('newPasswordForTarget').value;
+        const res = await fetch(API_URL + '/api/admin/change-other-password', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, target_username: targetUser, new_password: newPass}})
+        }});
+        const data = await res.json();
+        if(data.success) {{ alert('Password changed!'); }}
+        else {{ alert('Error: ' + data.error); }}
+    }}
+    
+    async function manageCredits() {{
+        const username = document.getElementById('creditUsername').value;
+        const amount = parseFloat(document.getElementById('creditAmount').value);
+        const res = await fetch(API_URL + '/api/admin/manage-credits', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value, target_username: username, amount: amount}})
+        }});
+        const data = await res.json();
+        if(data.success) {{ alert(`New balance: ${{data.new_balance}}`); loadAdmins(); if(username === currentUser) loadStats(); }}
+        else {{ alert('Error: ' + data.error); }}
+    }}
+    
+    async function changePassword() {{
         const oldPass = document.getElementById('oldPassword').value;
         const newPass = document.getElementById('newPassword').value;
         const confirmPass = document.getElementById('confirmPassword').value;
-        if(newPass !== confirmPass) { alert('Passwords do not match'); return; }
-        const res = await fetch('/api/admin/change-password', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: currentUser, old_password: oldPass, new_password: newPass})
-        });
+        if(newPass !== confirmPass) {{ alert('Passwords do not match!'); return; }}
+        const res = await fetch(API_URL + '/api/admin/change-password', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{username: currentUser, old_password: oldPass, new_password: newPass}})
+        }});
         const data = await res.json();
-        if(data.success) { alert('Password changed! Please login again.'); location.reload(); }
-        else { alert(data.error); }
-    }
+        const resultDiv = document.getElementById('passwordResult');
+        resultDiv.style.display = 'block';
+        if(data.success) {{ resultDiv.innerHTML = '✅ Password changed! Please login again.'; setTimeout(() => location.reload(), 2000); }}
+        else {{ resultDiv.innerHTML = '❌ ' + data.error; }}
+    }}
     
-    async function loadMonitor() {
-        const res = await fetch('/api/admin/get-monitor-data', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_username: currentUser, admin_password: document.getElementById('loginPassword').value})
-        });
+    async function loadMonitor() {{
+        const res = await fetch(API_URL + '/api/admin/get-monitor-data', {{
+            method: 'POST', headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
+        }});
         const data = await res.json();
-        document.getElementById('monitorData').innerHTML = `Trials: ${data.my_trials}<br>Custom: ${data.my_custom}<br>Permanent: ${data.my_permanent}<br>History: ${data.history_count}<br>Pending: ${data.pending_requests}<br>Active Users: ${data.active_users}<br><br>${data.server_time}`;
-    }
+        document.getElementById('monitorData').innerHTML = `📊 STATUS<br><br>🔹 Trials: ${{data.my_trials}}<br>🔹 Custom: ${{data.my_custom}}<br>🔹 Permanent: ${{data.my_permanent}}<br>🔹 History: ${{data.history_count}}<br>🔹 Pending: ${{data.pending_requests}}<br>🔹 Active Users: ${{data.active_users}}<br><br>⏰ ${{data.server_time}}`;
+    }}
     
-    async function deleteTrial(key) {
-        if(confirm('Delete?')) {
-            await fetch('/api/admin/delete-trial', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({admin_username:currentUser, admin_password:document.getElementById('loginPassword').value, license_key:key})});
-            loadMyLicenses(); loadStats();
-        }
-    }
+    async function deleteTrial(key) {{ if(confirm('Delete?')) {{ await fetch(API_URL + '/api/admin/delete-trial', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{admin_username:currentUser,admin_password:document.getElementById('loginPassword').value,license_key:key}})}}); loadMyTrials(); loadStats(); }} }}
+    async function deleteCustomActivation(key) {{ if(confirm('Delete?')) {{ await fetch(API_URL + '/api/admin/delete-custom-activation', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{admin_username:currentUser,admin_password:document.getElementById('loginPassword').value,license_key:key}})}}); loadMyCustom(); loadStats(); }} }}
+    async function deletePermanentLicense(key) {{ if(confirm('Delete?')) {{ await fetch(API_URL + '/api/admin/delete-permanent-license', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{admin_username:currentUser,admin_password:document.getElementById('loginPassword').value,license_key:key}})}}); loadMyPermanent(); loadStats(); }} }}
+    async function deleteAdmin(username) {{ if(confirm(`Delete ${{username}}?`)) {{ await fetch(API_URL + '/api/admin/delete-admin', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{admin_username:currentUser,admin_password:document.getElementById('loginPassword').value,target_username:username,role:'admin'}})}}); loadAdmins(); }} }}
+    async function deleteModerator(username) {{ if(confirm(`Delete ${{username}}?`)) {{ await fetch(API_URL + '/api/admin/delete-admin', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{admin_username:currentUser,admin_password:document.getElementById('loginPassword').value,target_username:username,role:'moderator'}})}}); loadAdmins(); }} }}
     
-    async function deleteAdmin(username) {
-        if(confirm(`Delete ${username}?`)) {
-            await fetch('/api/admin/delete-admin', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({admin_username:currentUser, admin_password:document.getElementById('loginPassword').value, target_username:username, role:'admin'})});
-            loadAdmins();
-        }
-    }
-    
-    function closeModal() { document.getElementById('credsModal').style.display = 'none'; }
-    setInterval(() => { if(document.getElementById('mainPanel').style.display === 'block') loadStats(); }, 30000);
+    function closeModal() {{ document.getElementById('credsModal').style.display = 'none'; }}
+    setInterval(() => {{ if(document.getElementById('mainPanel').style.display === 'block') loadStats(); }}, 30000);
 </script>
 </body>
 </html>
 """
+    return ADMIN_HTML
 
 # ==================================================
 # 🎨 USER PORTAL HTML
 # ==================================================
-USER_PORTAL_HTML = """
+def get_user_portal_html():
+    return f"""
 <!DOCTYPE html>
 <html>
 <head>
     <title>JEPFX License Portal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        """ + get_theme_css() + """
-        .container { max-width: 800px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { color: var(--primary); }
-        .card { background: var(--card-bg); backdrop-filter: blur(10px); border-radius: 15px; padding: 25px; margin-bottom: 20px; }
-        .card h2 { color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); }
-        button { background: var(--primary); color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .status-box { border-radius: 10px; padding: 15px; margin: 15px 0; border-left: 3px solid var(--primary); }
-        .status-active { border-left-color: var(--secondary); }
-        .status-expired { border-left-color: var(--danger); }
-        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
-        .info-label { color: var(--text-secondary); }
-        .info-value { color: var(--text); font-weight: bold; }
-        .contact-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .telegram-btn { background: #0088cc; text-decoration: none; color: white; padding: 12px; border-radius: 8px; text-align: center; }
-        .request-form { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
-        .request-form.show { display: block; }
-        .alert-error { background: rgba(239,68,68,0.2); border: 1px solid var(--danger); padding: 12px; border-radius: 8px; margin: 10px 0; }
-        .alert-info { background: rgba(59,130,246,0.2); border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin: 10px 0; }
-        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .badge-active { background: var(--secondary); color: white; }
-        .badge-expired { background: var(--danger); color: white; }
-        .hidden { display: none; }
+        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }}
+        {get_theme_css()}
+        body {{ min-height: 100vh; padding: 20px; transition: all 0.3s ease; }}
+        .container {{ max-width: 800px; margin: 0 auto; }}
+        .header {{ text-align: center; margin-bottom: 30px; }}
+        .header h1 {{ color: var(--primary); font-size: 32px; }}
+        .header p {{ color: var(--text-secondary); }}
+        .card {{ background: var(--card-bg); backdrop-filter: blur(10px); border-radius: 15px; padding: 25px; margin-bottom: 20px; transition: all 0.3s; }}
+        .card h2 {{ color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }}
+        input, select, textarea {{ width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; outline: none; }}
+        button {{ background: var(--primary); color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }}
+        button:hover {{ transform: translateY(-2px); filter: brightness(1.1); }}
+        .status-box {{ border-radius: 10px; padding: 15px; margin: 15px 0; border-left: 3px solid var(--primary); }}
+        .status-active {{ border-left-color: var(--secondary); }}
+        .status-expired {{ border-left-color: var(--danger); }}
+        .status-warning {{ border-left-color: var(--warning); }}
+        .info-row {{ display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }}
+        .info-label {{ color: var(--text-secondary); }}
+        .info-value {{ color: var(--text); font-weight: bold; }}
+        .contact-buttons {{ display: flex; gap: 10px; margin-top: 20px; }}
+        .contact-btn {{ flex: 1; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; transition: 0.3s; }}
+        .telegram-btn {{ background: #0088cc; }}
+        .telegram-btn:hover {{ background: #006699; transform: translateY(-2px); }}
+        .request-form {{ display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }}
+        .request-form.show {{ display: block; }}
+        .alert-success {{ background: rgba(16,185,129,0.2); border: 1px solid var(--secondary); color: var(--secondary); padding: 12px; border-radius: 8px; margin: 10px 0; }}
+        .alert-error {{ background: rgba(239,68,68,0.2); border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 8px; margin: 10px 0; }}
+        .alert-info {{ background: rgba(59,130,246,0.2); border: 1px solid var(--primary); color: var(--primary); padding: 12px; border-radius: 8px; margin: 10px 0; }}
+        .badge {{ display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }}
+        .badge-active {{ background: var(--secondary); color: white; }}
+        .badge-expired {{ background: var(--danger); color: white; }}
+        .badge-warning {{ background: var(--warning); color: white; }}
+        .hidden {{ display: none; }}
+        .loading {{ text-align: center; padding: 20px; }}
+        .spinner {{ border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }}
+        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
     </style>
 </head>
 <body>
@@ -944,111 +1197,166 @@ USER_PORTAL_HTML = """
     
     <div id="loginSection" class="card">
         <h2>🔐 License Login</h2>
+        <p>Enter your username and password to check your license status</p>
         <input type="text" id="loginUsername" placeholder="Username">
         <input type="password" id="loginPassword" placeholder="Password">
-        <button onclick="checkLicense()">CHECK LICENSE</button>
+        <button onclick="checkLicense()">CHECK LICENSE STATUS</button>
         <div id="loginError" class="alert-error" style="display: none;"></div>
     </div>
     
     <div id="statusSection" class="card hidden">
         <div id="statusContent"></div>
         <div id="requestForm" class="request-form">
-            <h3>📨 Request Extension</h3>
+            <h3>📨 Request Extension / Reactivation</h3>
+            <select id="requestType">
+                <option value="extension">Extension (Add more days)</option>
+                <option value="reactivation">Reactivation (Reset HWID)</option>
+                <option value="other">Other Request</option>
+            </select>
+            <input type="number" id="requestDays" placeholder="Days to add (if extension)" value="7">
             <textarea id="requestMessage" rows="3" placeholder="Describe your request..."></textarea>
-            <input type="text" id="contactInfo" placeholder="Your contact (Telegram)" value="t.me/">
-            <button onclick="submitRequest()">SUBMIT</button>
+            <input type="text" id="contactInfo" placeholder="Your contact (Telegram/Discord/Email)" value="t.me/">
+            <button onclick="submitRequest()">SUBMIT REQUEST</button>
             <div id="requestResult" class="alert-info" style="display: none;"></div>
         </div>
         <div class="contact-buttons">
-            <a href="https://t.me/JEPFX_0" target="_blank" class="telegram-btn">📱 Contact on Telegram</a>
+            <a href="https://t.me/JEPFX_0" target="_blank" class="contact-btn telegram-btn">📱 Contact on Telegram</a>
         </div>
     </div>
 </div>
 
-""" + THEME_SELECTOR_HTML + """
+{THEME_SELECTOR_HTML}
 
 <script>
     let currentLicenseKey = null;
     let currentUsername = null;
     
-    async function checkLicense() {
+    async function checkLicense() {{
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
-        if(!username || !password) { showError('Enter username and password'); return; }
         
-        const res = await fetch('/api/user/check-license', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
-        const data = await res.json();
-        if(data.success) {
-            currentLicenseKey = data.license_key;
-            currentUsername = username;
-            displayStatus(data);
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('statusSection').classList.remove('hidden');
-        } else {
-            showError(data.error);
-        }
-    }
+        if(!username || !password) {{
+            showError('Please enter username and password');
+            return;
+        }}
+        
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;"></div> Checking...';
+        
+        try {{
+            const res = await fetch('/api/user/check-license', {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify({{username: username, password: password}})
+            }});
+            const data = await res.json();
+            
+            if(data.success) {{
+                currentLicenseKey = data.license_key;
+                currentUsername = username;
+                displayLicenseStatus(data);
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('statusSection').classList.remove('hidden');
+            }} else {{
+                showError(data.error || 'Invalid credentials or license not found');
+            }}
+        }} catch (error) {{
+            showError('Connection error. Please try again.');
+        }}
+        
+        btn.disabled = false;
+        btn.innerHTML = 'CHECK LICENSE STATUS';
+    }}
     
-    function displayStatus(data) {
-        const statusClass = data.is_expired ? 'status-expired' : 'status-active';
-        const badgeClass = data.is_expired ? 'badge-expired' : 'badge-active';
-        const statusText = data.is_expired ? 'EXPIRED' : 'ACTIVE';
+    function displayLicenseStatus(data) {{
+        const statusClass = data.is_expired ? 'status-expired' : (data.days_left < 3 ? 'status-warning' : 'status-active');
+        const badgeClass = data.is_expired ? 'badge-expired' : (data.days_left < 3 ? 'badge-warning' : 'badge-active');
+        const statusText = data.is_expired ? 'EXPIRED' : (data.days_left < 3 ? 'EXPIRING SOON' : 'ACTIVE');
         
-        let activationMsg = '';
-        if(!data.activated && data.license_type === 'trial') {
-            activationMsg = '<div class="alert-info">⏳ Not activated yet. Countdown starts on first use!</div>';
-        }
+        let hwidHtml = '';
+        if(data.hwids && data.hwids.length > 0) {{
+            hwidHtml = '<div class="info-row"><span class="info-label">🖥️ Activated Devices:</span><span class="info-value">' + data.hwids.length + ' device(s)</span></div>';
+        }}
+        
+        let activationStatus = '';
+        if(!data.activated && data.license_type === 'trial') {{
+            activationStatus = '<div class="alert-info" style="margin:10px 0;">⏳ License not activated yet. It will start counting down after first activation!</div>';
+        }}
         
         const html = `
-            <div class="status-box ${statusClass}">
-                <div class="info-row"><span class="info-label">🔑 License:</span><span class="info-value">${data.license_key}</span></div>
-                <div class="info-row"><span class="info-label">👤 Username:</span><span class="info-value">${data.username}</span></div>
-                <div class="info-row"><span class="info-label">📋 Type:</span><span class="info-value">${data.license_type}</span></div>
-                <div class="info-row"><span class="info-label">📅 Expires:</span><span class="info-value">${data.expires_at || 'NEVER'}</span></div>
-                <div class="info-row"><span class="info-label">⏰ Status:</span><span class="info-value"><span class="badge ${badgeClass}">${statusText}</span></span></div>
-                ${data.days_left ? `<div class="info-row"><span class="info-label">📆 Days Left:</span><span class="info-value">${data.days_left}</span></div>` : ''}
-                ${data.max_devices ? `<div class="info-row"><span class="info-label">💻 Max Devices:</span><span class="info-value">${data.max_devices}</span></div>` : ''}
+            <div class="status-box ${{statusClass}}">
+                <div class="info-row"><span class="info-label">🔑 License Key:</span><span class="info-value"><code>${{data.license_key}}</code></span></div>
+                <div class="info-row"><span class="info-label">👤 Username:</span><span class="info-value">${{data.username}}</span></div>
+                <div class="info-row"><span class="info-label">📋 License Type:</span><span class="info-value">${{data.license_type}}</span></div>
+                <div class="info-row"><span class="info-label">📅 Expires:</span><span class="info-value">${{data.expires_at || 'NEVER'}}</span></div>
+                <div class="info-row"><span class="info-label">⏰ Status:</span><span class="info-value"><span class="badge ${{badgeClass}}">${{statusText}}</span></span></div>
+                ${{data.days_left !== null ? `<div class="info-row"><span class="info-label">📆 Days Left:</span><span class="info-value">${{data.days_left}} days</span></div>` : ''}}
+                ${{data.max_devices ? `<div class="info-row"><span class="info-label">💻 Max Devices:</span><span class="info-value">${{data.max_devices}}</span></div>` : ''}}
+                ${{hwidHtml}}
+                ${{data.created_at ? `<div class="info-row"><span class="info-label">📅 Created:</span><span class="info-value">${{new Date(data.created_at).toLocaleString()}}</span></div>` : ''}}
+                ${{data.last_used ? `<div class="info-row"><span class="info-label">🕐 Last Used:</span><span class="info-value">${{new Date(data.last_used).toLocaleString()}}</span></div>` : ''}}
             </div>
-            ${activationMsg}
+            ${{activationStatus}}
+            ${{data.is_expired ? '<div class="alert-error" style="margin:10px 0;">⚠️ Your license has expired. Submit a request for reactivation.</div>' : ''}}
+            ${{!data.is_expired && data.days_left < 7 && data.days_left !== null ? '<div class="alert-warning" style="background:rgba(245,158,11,0.2);border:1px solid var(--warning);padding:10px;border-radius:8px;margin:10px 0;">⚠️ Your license is expiring soon! Submit a request to extend.</div>' : ''}}
         `;
+        
         document.getElementById('statusContent').innerHTML = html;
         document.getElementById('requestForm').classList.add('show');
-    }
+    }}
     
-    async function submitRequest() {
-        const message = document.getElementById('requestMessage').value;
-        const contact = document.getElementById('contactInfo').value;
-        if(!message) { alert('Please describe your request'); return; }
+    async function submitRequest() {{
+        const requestType = document.getElementById('requestType').value;
+        const requestDays = document.getElementById('requestDays').value;
+        const requestMessage = document.getElementById('requestMessage').value;
+        const contactInfo = document.getElementById('contactInfo').value;
         
-        const res = await fetch('/api/user/submit-request', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({license_key: currentLicenseKey, username: currentUsername, request_type: 'extension', message, contact})
-        });
+        if(!requestMessage) {{
+            alert('Please describe your request');
+            return;
+        }}
+        
+        const res = await fetch('/api/user/submit-request', {{
+            method: 'POST',
+            headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{
+                license_key: currentLicenseKey,
+                username: currentUsername,
+                request_type: requestType,
+                days_requested: parseInt(requestDays) || 0,
+                message: requestMessage,
+                contact: contactInfo
+            }})
+        }});
+        
         const data = await res.json();
         const resultDiv = document.getElementById('requestResult');
-        if(data.success) {
-            resultDiv.innerHTML = '✅ Request submitted! Admin will review it.';
+        
+        if(data.success) {{
+            resultDiv.className = 'alert-success';
+            resultDiv.innerHTML = '✅ Request submitted successfully! Admin will review and contact you soon.';
             resultDiv.style.display = 'block';
             document.getElementById('requestMessage').value = '';
-        } else {
+            setTimeout(() => {{ resultDiv.style.display = 'none'; }}, 5000);
+        }} else {{
+            resultDiv.className = 'alert-error';
             resultDiv.innerHTML = '❌ Error: ' + data.error;
             resultDiv.style.display = 'block';
-        }
-    }
+        }}
+    }}
     
-    function showError(msg) {
+    function showError(msg) {{
         const errorDiv = document.getElementById('loginError');
         errorDiv.innerHTML = msg;
         errorDiv.style.display = 'block';
-        setTimeout(() => errorDiv.style.display = 'none', 5000);
-    }
+        setTimeout(() => {{ errorDiv.style.display = 'none'; }}, 5000);
+    }}
 </script>
 </body>
 </html>
 """
+    return USER_PORTAL_HTML
 
 # ==================================================
 # 🔐 API ENDPOINTS
@@ -1091,7 +1399,6 @@ def change_password():
     if username == MASTER_ADMIN["username"]:
         if old_password == MASTER_ADMIN["password"]:
             MASTER_ADMIN["password"] = new_password
-            save_data()
             return jsonify({"success": True}), 200
         return jsonify({"success": False, "error": "Wrong password"}), 401
     
@@ -1110,6 +1417,59 @@ def change_password():
     
     return jsonify({"success": False, "error": "User not found"}), 404
 
+@app.route('/api/admin/change-other-password', methods=['POST'])
+def change_other_password():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"] or auth["role"] != "master":
+        return jsonify({"success": False, "error": "Only master admin can change other passwords"}), 401
+    
+    target_username = data.get("target_username", "")
+    new_password = data.get("new_password", "")
+    
+    if not target_username or not new_password:
+        return jsonify({"success": False, "error": "Username and new password required"}), 400
+    
+    if target_username in ADMINS:
+        ADMINS[target_username]["password"] = new_password
+        save_data()
+        return jsonify({"success": True}), 200
+    
+    if target_username in MODERATORS:
+        MODERATORS[target_username]["password"] = new_password
+        save_data()
+        return jsonify({"success": True}), 200
+    
+    return jsonify({"success": False, "error": "User not found"}), 404
+
+@app.route('/api/admin/change-role', methods=['POST'])
+def change_user_role():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"] or auth["role"] != "master":
+        return jsonify({"success": False, "error": "Only master admin can change roles"}), 401
+    
+    target_username = data.get("target_username", "")
+    new_role = data.get("new_role", "")
+    
+    if target_username == MASTER_ADMIN["username"]:
+        return jsonify({"success": False, "error": "Cannot change master admin role"}), 400
+    
+    if target_username in ADMINS:
+        user_data = ADMINS.pop(target_username)
+    elif target_username in MODERATORS:
+        user_data = MODERATORS.pop(target_username)
+    else:
+        return jsonify({"success": False, "error": "User not found"}), 404
+    
+    if new_role == "admin":
+        ADMINS[target_username] = user_data
+    else:
+        MODERATORS[target_username] = user_data
+    
+    save_data()
+    return jsonify({"success": True}), 200
+
 @app.route('/api/admin/get-stats', methods=['POST'])
 def get_stats():
     data = request.get_json()
@@ -1119,7 +1479,7 @@ def get_stats():
     
     licenses = get_licenses_by_owner(auth["username"], auth["role"])
     history = get_history_by_owner(auth["username"], auth["role"])
-    pending_requests = sum(1 for r in USER_REQUESTS if r.get("status") == "pending")
+    pending_requests = sum(1 for r in USER_REQUESTS if r.get("status") == "pending" and (auth["role"] == "master" or r.get("license_key") in licenses["trials"] or r.get("license_key") in licenses["custom"]))
     
     return jsonify({
         "success": True,
@@ -1174,7 +1534,8 @@ def generate_trial():
         "username": user,
         "password": pwd,
         "credits_used": credits_cost,
-        "remaining_credits": remaining
+        "remaining_credits": remaining,
+        "max_devices": max_devices
     }), 200
 
 @app.route('/api/admin/create-custom-activation', methods=['POST'])
@@ -1182,7 +1543,7 @@ def create_custom_activation():
     data = request.get_json()
     auth = check_admin_auth(data)
     if not auth["authorized"] or auth["role"] == "moderator":
-        return jsonify({"success": False, "error": "Unauthorized"}), 403
+        return jsonify({"success": False, "error": "Moderators cannot create custom licenses"}), 403
     
     username = data.get("username", "").strip()
     password = data.get("password", "").strip()
@@ -1192,7 +1553,7 @@ def create_custom_activation():
     max_devices = int(data.get("max_devices", 1))
     
     if not username or not password or not license_key:
-        return jsonify({"success": False, "error": "Missing fields"}), 400
+        return jsonify({"success": False, "error": "Missing required fields"}), 400
     
     now = datetime.utcnow()
     expires_at = None
@@ -1210,13 +1571,16 @@ def create_custom_activation():
     elif duration_type == "months":
         credits_cost = round(duration_value * CREDIT_PRICING["custom_month"], 2)
         expires_at = now + timedelta(days=duration_value * 30)
+    elif duration_type == "years":
+        credits_cost = round(duration_value * CREDIT_PRICING["custom_year"], 2)
+        expires_at = now + timedelta(days=duration_value * 365)
     elif duration_type == "unlimited":
         credits_cost = CREDIT_PRICING["custom_unlimited"]
         expires_at = None
     
     if auth["role"] != "master":
         if not deduct_credits(auth["username"], credits_cost):
-            return jsonify({"success": False, "error": f"Insufficient credits"}), 400
+            return jsonify({"success": False, "error": f"Insufficient credits. Need {credits_cost} credits"}), 400
     
     CUSTOM_ACTIVATIONS[license_key] = {
         "username": username,
@@ -1231,7 +1595,10 @@ def create_custom_activation():
     }
     
     VALID_USERS[username] = password
-    add_to_history(license_key, username, password, "Custom", auth["username"], expires_at.isoformat() if expires_at else "UNLIMITED", {"max_devices": max_devices})
+    
+    add_to_history(license_key, username, password, "Custom", auth["username"], 
+                   expires_at.isoformat() if expires_at else "UNLIMITED", 
+                   {"duration_type": duration_type, "duration_value": duration_value, "max_devices": max_devices})
     
     save_data()
     remaining = get_credits(auth["username"])
@@ -1248,7 +1615,7 @@ def create_permanent_license():
     data = request.get_json()
     auth = check_admin_auth(data)
     if not auth["authorized"] or auth["role"] != "master":
-        return jsonify({"success": False, "error": "Unauthorized"}), 403
+        return jsonify({"success": False, "error": "Only master admin can create permanent licenses"}), 403
     
     license_key = data.get("license_key", "").strip().upper()
     username = data.get("username", "").strip()
@@ -1272,7 +1639,8 @@ def create_permanent_license():
     if username and password:
         VALID_USERS[username] = password
     
-    add_to_history(license_key, username if username else "N/A", password if password else "N/A", "Permanent", auth["username"], "NEVER", {"max_devices": max_devices})
+    add_to_history(license_key, username if username else "N/A", password if password else "N/A", 
+                   "Permanent", auth["username"], "NEVER", {"max_devices": max_devices})
     
     save_data()
     remaining = get_credits(auth["username"])
@@ -1294,7 +1662,7 @@ def get_my_trials():
     
     for k, v in TRIAL_LICENSES.items():
         if v.get("owner") == auth["username"] or auth["role"] == "master":
-            status = "AWAITING"
+            status = "NOT ACTIVATED"
             activated = False
             if v.get("activated"):
                 activated = True
@@ -1304,17 +1672,74 @@ def get_my_trials():
                         status = "ACTIVE"
                     else:
                         status = "EXPIRED"
+            elif v.get("start_time") is None:
+                status = "AWAITING ACTIVATION"
+            
+            hwid_count = len(v.get("hwids", []))
             
             list_trials.append({
                 "license_key": k,
+                "duration_hours": f"{v['duration_hours']}h",
                 "max_devices": v.get("max_devices", 1),
-                "hwid_count": len(v.get("hwids", [])),
+                "hwid_count": hwid_count,
                 "activated": activated,
                 "expires_at": v.get("expires_at") or "Not activated",
                 "status": status
             })
     
     return jsonify({"trials": list_trials}), 200
+
+@app.route('/api/admin/get-my-custom', methods=['POST'])
+def get_my_custom():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"]:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    now = datetime.utcnow()
+    list_custom = []
+    
+    for k, v in CUSTOM_ACTIVATIONS.items():
+        if v.get("owner") == auth["username"] or auth["role"] == "master":
+            status = "ACTIVE"
+            if v.get("expires_at"):
+                exp = datetime.fromisoformat(v["expires_at"])
+                if now > exp:
+                    status = "EXPIRED"
+            
+            list_custom.append({
+                "license_key": k,
+                "username": v.get("username"),
+                "password": v.get("password"),
+                "max_devices": v.get("max_devices", 1),
+                "hwids": v.get("hwids", []),
+                "expires_at": v.get("expires_at") or "UNLIMITED",
+                "status": status
+            })
+    
+    return jsonify({"activations": list_custom}), 200
+
+@app.route('/api/admin/get-my-permanent', methods=['POST'])
+def get_my_permanent():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"]:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    list_permanent = []
+    
+    for k, v in PERMANENT_LICENSES.items():
+        if v.get("owner") == auth["username"] or auth["role"] == "master":
+            list_permanent.append({
+                "license_key": k,
+                "username": v.get("username"),
+                "max_devices": v.get("max_devices", 1),
+                "hwids": v.get("hwids", []),
+                "expires_at": v.get("expires_at") or "UNLIMITED",
+                "status": "ACTIVE"
+            })
+    
+    return jsonify({"licenses": list_permanent}), 200
 
 @app.route('/api/admin/get-history', methods=['POST'])
 def get_history():
@@ -1328,6 +1753,39 @@ def get_history():
     
     return jsonify({"history": history}), 200
 
+@app.route('/api/admin/export-history', methods=['GET'])
+def export_history():
+    admin_username = request.args.get("admin_username")
+    admin_password = request.args.get("admin_password")
+    
+    auth = check_admin_auth({"admin_username": admin_username, "admin_password": admin_password})
+    if not auth["authorized"]:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    history = get_history_by_owner(auth["username"], auth["role"])
+    
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Created At', 'License Key', 'Username', 'Password', 'Type', 'Owner', 'Expires At'])
+    
+    for item in history:
+        writer.writerow([
+            item.get('created_at', ''),
+            item.get('license_key', ''),
+            item.get('username', ''),
+            item.get('password', ''),
+            item.get('type', ''),
+            item.get('owner', ''),
+            item.get('expires_at', '')
+        ])
+    
+    output.seek(0)
+    return Response(output.getvalue(), mimetype='text/csv', 
+                   headers={"Content-Disposition": "attachment;filename=license_history.csv"})
+
 @app.route('/api/admin/get-admins', methods=['POST'])
 def get_admins():
     data = request.get_json()
@@ -1335,8 +1793,10 @@ def get_admins():
     if not auth["authorized"] or auth["role"] != "master":
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
-    admins_list = [{"username": k, "credits": v["credits"]} for k, v in ADMINS.items()]
-    return jsonify({"admins": admins_list}), 200
+    admins_list = [{"username": k, "credits": v["credits"], "created_at": v.get("created_at")} for k, v in ADMINS.items()]
+    mods_list = [{"username": k, "credits": v["credits"], "created_at": v.get("created_at")} for k, v in MODERATORS.items()]
+    
+    return jsonify({"admins": admins_list, "moderators": mods_list}), 200
 
 @app.route('/api/admin/add-admin', methods=['POST'])
 def add_admin():
@@ -1354,12 +1814,44 @@ def add_admin():
         return jsonify({"success": False, "error": "Username and password required"}), 400
     
     if role == "admin":
-        ADMINS[new_username] = {"password": new_password, "credits": credits, "created_at": datetime.utcnow().isoformat()}
+        ADMINS[new_username] = {
+            "password": new_password,
+            "credits": credits,
+            "created_at": datetime.utcnow().isoformat()
+        }
     else:
-        MODERATORS[new_username] = {"password": new_password, "credits": credits, "created_at": datetime.utcnow().isoformat()}
+        MODERATORS[new_username] = {
+            "password": new_password,
+            "credits": credits,
+            "created_at": datetime.utcnow().isoformat()
+        }
     
     save_data()
     return jsonify({"success": True}), 200
+
+@app.route('/api/admin/manage-credits', methods=['POST'])
+def manage_credits():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"] or auth["role"] != "master":
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    target_username = data.get("target_username", "")
+    amount = float(data.get("amount", 0))
+    
+    if target_username in ADMINS:
+        ADMINS[target_username]["credits"] = round(ADMINS[target_username]["credits"] + amount, 2)
+        new_balance = ADMINS[target_username]["credits"]
+        save_data()
+        return jsonify({"success": True, "new_balance": new_balance}), 200
+    
+    if target_username in MODERATORS:
+        MODERATORS[target_username]["credits"] = round(MODERATORS[target_username]["credits"] + amount, 2)
+        new_balance = MODERATORS[target_username]["credits"]
+        save_data()
+        return jsonify({"success": True, "new_balance": new_balance}), 200
+    
+    return jsonify({"success": False, "error": "User not found"}), 404
 
 @app.route('/api/admin/delete-admin', methods=['POST'])
 def delete_admin():
@@ -1431,6 +1923,42 @@ def delete_trial():
         return jsonify({"success": True}), 200
     return jsonify({"success": False, "error": "Not found"}), 404
 
+@app.route('/api/admin/delete-custom-activation', methods=['POST'])
+def delete_custom_activation():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"]:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    key = data.get("license_key", "")
+    
+    if key in CUSTOM_ACTIVATIONS:
+        if auth["role"] != "master" and CUSTOM_ACTIVATIONS[key].get("owner") != auth["username"]:
+            return jsonify({"success": False, "error": "Not your license"}), 403
+        
+        del CUSTOM_ACTIVATIONS[key]
+        save_data()
+        return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Not found"}), 404
+
+@app.route('/api/admin/delete-permanent-license', methods=['POST'])
+def delete_permanent_license():
+    data = request.get_json()
+    auth = check_admin_auth(data)
+    if not auth["authorized"]:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    key = data.get("license_key", "")
+    
+    if key in PERMANENT_LICENSES:
+        if auth["role"] != "master" and PERMANENT_LICENSES[key].get("owner") != auth["username"]:
+            return jsonify({"success": False, "error": "Not your license"}), 403
+        
+        del PERMANENT_LICENSES[key]
+        save_data()
+        return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Not found"}), 404
+
 @app.route('/api/admin/get-requests', methods=['POST'])
 def admin_get_requests():
     data = request.get_json()
@@ -1461,12 +1989,49 @@ def admin_approve_request():
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
     req_index = data.get("request_index")
+    license_key = data.get("license_key")
+    request_type = data.get("request_type")
+    days_to_add = data.get("days_to_add", 7)
     
     if req_index is None or req_index >= len(USER_REQUESTS):
         return jsonify({"success": False, "error": "Request not found"}), 404
     
+    req = USER_REQUESTS[req_index]
+    
+    if auth["role"] != "master":
+        if license_key in TRIAL_LICENSES and TRIAL_LICENSES[license_key].get("owner") != auth["username"]:
+            return jsonify({"success": False, "error": "Not your license"}), 403
+        if license_key in CUSTOM_ACTIVATIONS and CUSTOM_ACTIVATIONS[license_key].get("owner") != auth["username"]:
+            return jsonify({"success": False, "error": "Not your license"}), 403
+    
+    now = datetime.utcnow()
+    
+    if request_type == "extension":
+        if license_key in CUSTOM_ACTIVATIONS:
+            current_exp = CUSTOM_ACTIVATIONS[license_key].get("expires_at")
+            if current_exp:
+                new_exp = datetime.fromisoformat(current_exp) + timedelta(days=days_to_add)
+            else:
+                new_exp = now + timedelta(days=days_to_add)
+            CUSTOM_ACTIVATIONS[license_key]["expires_at"] = new_exp.isoformat()
+        elif license_key in TRIAL_LICENSES:
+            current_exp = TRIAL_LICENSES[license_key].get("expires_at")
+            if current_exp:
+                new_exp = datetime.fromisoformat(current_exp) + timedelta(days=days_to_add)
+            else:
+                new_exp = now + timedelta(days=days_to_add)
+            TRIAL_LICENSES[license_key]["expires_at"] = new_exp.isoformat()
+            TRIAL_LICENSES[license_key]["activated"] = True
+    
+    elif request_type == "reactivation":
+        if license_key in CUSTOM_ACTIVATIONS:
+            CUSTOM_ACTIVATIONS[license_key]["hwids"] = []
+        elif license_key in TRIAL_LICENSES:
+            TRIAL_LICENSES[license_key]["hwids"] = []
+    
     USER_REQUESTS[req_index]["status"] = "approved"
-    USER_REQUESTS[req_index]["approved_at"] = datetime.utcnow().isoformat()
+    USER_REQUESTS[req_index]["approved_at"] = now.isoformat()
+    USER_REQUESTS[req_index]["approved_by"] = auth["username"]
     
     save_data()
     return jsonify({"success": True}), 200
@@ -1485,6 +2050,7 @@ def admin_reject_request():
     
     USER_REQUESTS[req_index]["status"] = "rejected"
     USER_REQUESTS[req_index]["rejected_at"] = datetime.utcnow().isoformat()
+    USER_REQUESTS[req_index]["rejected_by"] = auth["username"]
     
     save_data()
     return jsonify({"success": True}), 200
@@ -1495,7 +2061,7 @@ def admin_reject_request():
 
 @app.route('/user')
 def user_portal():
-    return render_template_string(USER_PORTAL_HTML)
+    return render_template_string(get_user_portal_html())
 
 @app.route('/api/user/check-license', methods=['POST'])
 def user_check_license():
@@ -1506,7 +2072,7 @@ def user_check_license():
     license_key, license_type, license_data = find_license_by_credentials(username, password)
     
     if not license_key:
-        return jsonify({"success": False, "error": "Invalid credentials"}), 401
+        return jsonify({"success": False, "error": "Invalid username or password"}), 401
     
     now = datetime.utcnow()
     expires_at = license_data.get("expires_at")
@@ -1517,7 +2083,7 @@ def user_check_license():
     if license_type == "trial" and not activated:
         days_left = None
         is_expired = False
-    elif expires_at and expires_at not in ["NEVER", "UNLIMITED", "NOT ACTIVATED YET"]:
+    elif expires_at and expires_at not in ["NEVER", "UNLIMITED"]:
         try:
             exp_time = datetime.fromisoformat(expires_at)
             if now > exp_time:
@@ -1526,6 +2092,8 @@ def user_check_license():
                 days_left = round((exp_time - now).days, 1)
         except:
             pass
+    
+    usage_stats = get_usage_stats(license_key)
     
     return jsonify({
         "success": True,
@@ -1537,7 +2105,10 @@ def user_check_license():
         "days_left": days_left,
         "activated": activated,
         "max_devices": license_data.get("max_devices", 1),
-        "hwids": license_data.get("hwids", [])
+        "hwids": license_data.get("hwids", []),
+        "usage_count": usage_stats["total_usage"],
+        "created_at": license_data.get("created_at"),
+        "last_used": usage_stats["last_used"]
     }), 200
 
 @app.route('/api/user/submit-request', methods=['POST'])
@@ -1546,16 +2117,18 @@ def user_submit_request():
     license_key = data.get("license_key", "")
     username = data.get("username", "")
     request_type = data.get("request_type", "extension")
+    days_requested = data.get("days_requested", 7)
     message = data.get("message", "")
     contact = data.get("contact", "")
     
     if not license_key or not username or not message:
-        return jsonify({"success": False, "error": "Missing fields"}), 400
+        return jsonify({"success": False, "error": "Missing required fields"}), 400
     
     USER_REQUESTS.append({
         "license_key": license_key,
         "username": username,
         "request_type": request_type,
+        "days_requested": days_requested,
         "message": message,
         "contact": contact,
         "status": "pending",
@@ -1563,7 +2136,7 @@ def user_submit_request():
     })
     save_data()
     
-    return jsonify({"success": True}), 200
+    return jsonify({"success": True, "message": "Request submitted successfully"}), 200
 
 # ==================================================
 # 🔑 ACTIVATION ENDPOINTS
@@ -1600,7 +2173,7 @@ def activate():
         
         save_data()
         log_usage(key, "activation", {"hwid": hwid})
-        return jsonify({"status": "activated"}), 200
+        return jsonify({"status": "activated", "msg": f"Activated on {len(activation['hwids'])}/{max_devices} device(s)"}), 200
     
     if key in PERMANENT_LICENSES:
         lic = PERMANENT_LICENSES[key]
@@ -1641,7 +2214,7 @@ def activate():
                 return jsonify({"status": "expired"}), 403
         
         log_usage(key, "activation", {"hwid": hwid})
-        return jsonify({"status": "activated"}), 200
+        return jsonify({"status": "activated", "msg": f"Activated on {len(lic['hwids'])}/{max_devices} device(s)"}), 200
     
     return jsonify({"status": "invalid"}), 403
 
@@ -1720,7 +2293,7 @@ def check_pass():
 
 @app.route('/admin')
 def admin_page():
-    return render_template_string(ADMIN_HTML)
+    return render_template_string(get_admin_html())
 
 @app.route('/')
 def home():
