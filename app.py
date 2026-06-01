@@ -261,10 +261,10 @@ load_data()
 # ==================================================
 # 🔗 REGISTRATION LINK FUNCTIONS
 # ==================================================
-def generate_registration_link(license_type, duration_value, duration_type, max_devices, created_by):
+def generate_registration_link(license_type, duration_value, duration_type, max_devices, created_by, credits_cost=0):
     """Generate a unique one-time registration link"""
     token = secrets.token_urlsafe(16)
-    expires_at = datetime.utcnow() + timedelta(days=7)  # Links expire in 7 days
+    expires_at = datetime.utcnow() + timedelta(hours=24)  # Links expire in 24 hours
     
     REGISTRATION_LINKS[token] = {
         "license_type": license_type,  # "trial" or "custom"
@@ -276,7 +276,8 @@ def generate_registration_link(license_type, duration_value, duration_type, max_
         "expires_at": expires_at.isoformat(),
         "used": False,
         "used_by": None,
-        "used_at": None
+        "used_at": None,
+        "credits_cost": credits_cost  # Store cost for refund on cancel
     }
     save_data()
     return token
@@ -457,11 +458,13 @@ def monitor_expired_licenses():
             now = datetime.utcnow()
             changes_made = False
             
-            # Clean up expired registration links
+            # Clean up expired registration links — refund if unused
             for token, link in list(REGISTRATION_LINKS.items()):
                 if link.get("expires_at"):
                     exp_time = datetime.fromisoformat(link["expires_at"])
                     if now > exp_time:
+                        if not link.get("used") and link.get("credits_cost", 0) > 0:
+                            add_credits(link["created_by"], link["credits_cost"])
                         del REGISTRATION_LINKS[token]
                         changes_made = True
             
@@ -1402,17 +1405,22 @@ def get_admin_html():
         
         <div id="registrationLinks" class="content">
             <h2><i class="fas fa-link"></i> Registration Links</h2>
-            <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-                <h3><i class="fas fa-plus-circle"></i> Generate New Registration Link</h3>
+            <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border);">
+                <h3 style="margin-bottom: 15px;"><i class="fas fa-plus-circle"></i> Generate New Registration Link</h3>
+                <div style="background: rgba(245,158,11,0.1); border: 1px solid var(--warning); border-radius: 10px; padding: 10px 14px; margin-bottom: 15px; font-size: 13px;">
+                    <i class="fas fa-info-circle" style="color: var(--warning);"></i> Links expire in <strong>24 hours</strong>. Unused links are <strong>fully refunded</strong> on cancel or expiry.
+                </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <select id="linkLicenseType">
+                        <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">License Type</label>
+                        <select id="linkLicenseType" onchange="updateLinkCostPreview()">
                             <option value="trial">Trial License</option>
-                            <option value="custom">Custom License</option>
+                            <option value="custom" id="linkCustomOption">Custom License</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <select id="linkDurationType">
+                        <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">Duration Type</label>
+                        <select id="linkDurationType" onchange="updateLinkCostPreview()">
                             <option value="hours">Hours</option>
                             <option value="days">Days</option>
                             <option value="weeks">Weeks</option>
@@ -1424,17 +1432,26 @@ def get_admin_html():
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <input type="number" id="linkDurationValue" placeholder="Duration value" step="0.5" value="1">
+                        <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">Duration Value</label>
+                        <input type="number" id="linkDurationValue" placeholder="e.g. 1" step="0.5" value="1" oninput="updateLinkCostPreview()">
                     </div>
                     <div class="form-group">
+                        <label style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; display:block;">Max Devices</label>
                         <input type="number" id="linkMaxDevices" placeholder="Max devices" value="1" min="1" max="100">
                     </div>
                 </div>
-                <button onclick="generateRegistrationLink()"><i class="fas fa-link"></i> GENERATE LINK</button>
+                <div id="linkCostPreview" style="background: rgba(124,58,237,0.15); border-radius: 10px; padding: 10px 14px; margin-bottom: 15px; font-size: 13px; display: none;">
+                    <i class="fas fa-coins" style="color: var(--primary);"></i> Estimated cost: <strong id="linkCostValue">0</strong> credits
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="generateRegistrationLink()" style="flex:1;"><i class="fas fa-link"></i> GENERATE LINK</button>
+                </div>
             </div>
             
-            <h3><i class="fas fa-list"></i> Active Registration Links</h3>
-            <button onclick="loadRegistrationLinks()"><i class="fas fa-sync-alt"></i> REFRESH</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3><i class="fas fa-list"></i> Active Registration Links</h3>
+                <button onclick="loadRegistrationLinks()" style="width:auto; padding: 8px 16px;"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
             <div id="linksList"></div>
         </div>
         
@@ -1468,64 +1485,74 @@ def get_admin_html():
         
         <div id="admins" class="content">
             <div class="master-only">
-                <h2><i class="fas fa-crown"></i> MASTER CONTROL</h2>
+                <h2><i class="fas fa-crown"></i> MASTER CONTROL — User Management</h2>
             </div>
-            <div style="display: grid; gap: 25px;">
-                <div>
-                    <h3><i class="fas fa-user-plus"></i> Add User</h3>
-                    <div class="form-row">
-                        <div class="form-group"><input type="text" id="newAdminUser" placeholder="Username"></div>
-                        <div class="form-group"><input type="password" id="newAdminPass" placeholder="Password"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <select id="newAdminRole">
-                                <option value="admin">Admin (Trial + Custom)</option>
-                                <option value="moderator">Moderator (Trial only)</option>
-                            </select>
-                        </div>
-                        <div class="form-group"><input type="number" id="newAdminCredits" placeholder="Initial Credits" value="100" step="0.5"></div>
-                    </div>
-                    <button onclick="addAdmin()"><i class="fas fa-plus"></i> ADD USER</button>
+            
+            <!-- Action Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 28px;">
+                
+                <!-- Add User Card -->
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 16px; padding: 20px;">
+                    <h3 style="margin-bottom: 14px; font-size: 15px;"><i class="fas fa-user-plus" style="color: var(--secondary);"></i> &nbsp;Add New User</h3>
+                    <input type="text" id="newAdminUser" placeholder="Username">
+                    <input type="password" id="newAdminPass" placeholder="Password">
+                    <select id="newAdminRole" style="margin: 8px 0;">
+                        <option value="admin">Admin (Trial + Custom)</option>
+                        <option value="moderator">Moderator (Trial only)</option>
+                    </select>
+                    <input type="number" id="newAdminCredits" placeholder="Initial Credits" value="100" step="0.5">
+                    <button class="btn-success" onclick="addAdmin()" style="margin-top: 10px;"><i class="fas fa-plus"></i> ADD USER</button>
                 </div>
                 
-                <div>
-                    <h3><i class="fas fa-exchange-alt"></i> Change Role</h3>
-                    <div class="form-row">
-                        <div class="form-group"><input type="text" id="roleChangeUser" placeholder="Username"></div>
-                        <div class="form-group">
-                            <select id="newRoleSelect">
-                                <option value="admin">Admin (Trial + Custom)</option>
-                                <option value="moderator">Moderator (Trial only)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button class="btn-warning" onclick="changeUserRole()"><i class="fas fa-sync"></i> CHANGE ROLE</button>
+                <!-- Change Role Card -->
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 16px; padding: 20px;">
+                    <h3 style="margin-bottom: 14px; font-size: 15px;"><i class="fas fa-exchange-alt" style="color: var(--warning);"></i> &nbsp;Change Role</h3>
+                    <input type="text" id="roleChangeUser" placeholder="Username">
+                    <select id="newRoleSelect" style="margin: 8px 0;">
+                        <option value="admin">Admin (Trial + Custom)</option>
+                        <option value="moderator">Moderator (Trial only)</option>
+                    </select>
+                    <button class="btn-warning" onclick="changeUserRole()" style="margin-top: 10px;"><i class="fas fa-sync"></i> CHANGE ROLE</button>
+                    
+                    <hr style="border-color: var(--border); margin: 16px 0;">
+                    
+                    <h3 style="margin-bottom: 14px; font-size: 15px;"><i class="fas fa-key" style="color: var(--primary);"></i> &nbsp;Change User Password</h3>
+                    <input type="text" id="targetUsername" placeholder="Username">
+                    <input type="password" id="newPasswordForTarget" placeholder="New Password">
+                    <button onclick="changeOtherPassword()" style="margin-top: 10px;"><i class="fas fa-lock"></i> CHANGE PASSWORD</button>
                 </div>
                 
-                <div>
-                    <h3><i class="fas fa-key"></i> Change Password (Other User)</h3>
-                    <div class="form-row">
-                        <div class="form-group"><input type="text" id="targetUsername" placeholder="Username"></div>
-                        <div class="form-group"><input type="password" id="newPasswordForTarget" placeholder="New Password"></div>
+                <!-- Credits Card -->
+                <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 16px; padding: 20px;">
+                    <h3 style="margin-bottom: 14px; font-size: 15px;"><i class="fas fa-coins" style="color: #F59E0B;"></i> &nbsp;Manage Credits</h3>
+                    <input type="text" id="creditUsername" placeholder="Username">
+                    <input type="number" id="creditAmount" placeholder="Amount (use - to deduct)" step="0.5">
+                    <button onclick="manageCredits()" style="margin-top: 10px;"><i class="fas fa-wallet"></i> UPDATE CREDITS</button>
+                    <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+                        <i class="fas fa-info-circle"></i> Use negative numbers to deduct credits (e.g. -50)
                     </div>
-                    <button onclick="changeOtherPassword()"><i class="fas fa-lock"></i> CHANGE PASSWORD</button>
                 </div>
-                
+            </div>
+            
+            <!-- Users Tables -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
-                    <h3><i class="fas fa-coins"></i> Manage Credits</h3>
-                    <div class="form-row">
-                        <div class="form-group"><input type="text" id="creditUsername" placeholder="Username"></div>
-                        <div class="form-group"><input type="number" id="creditAmount" placeholder="Amount (+/-)" step="0.5"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="font-size: 15px;"><i class="fas fa-users" style="color: var(--primary);"></i> &nbsp;Admins</h3>
+                        <button onclick="loadAdmins()" style="width:auto; padding:6px 14px; font-size:12px;"><i class="fas fa-sync-alt"></i></button>
                     </div>
-                    <button onclick="manageCredits()"><i class="fas fa-wallet"></i> UPDATE CREDITS</button>
+                    <div style="overflow-x:auto; border-radius: 12px; border: 1px solid var(--border);">
+                        <div id="adminsList"></div>
+                    </div>
                 </div>
-                
                 <div>
-                    <h3><i class="fas fa-users"></i> Admins</h3>
-                    <div class="table-wrapper"><div id="adminsList"></div></div>
-                    <h3 style="margin-top: 20px;"><i class="fas fa-user-shield"></i> Moderators</h3>
-                    <div class="table-wrapper"><div id="moderatorsList"></div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="font-size: 15px;"><i class="fas fa-user-shield" style="color: var(--secondary);"></i> &nbsp;Moderators</h3>
+                        <button onclick="loadAdmins()" style="width:auto; padding:6px 14px; font-size:12px;"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div style="overflow-x:auto; border-radius: 12px; border: 1px solid var(--border);">
+                        <div id="moderatorsList"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1607,10 +1634,14 @@ def get_admin_html():
                 document.getElementById('customTab').style.display = 'none';
                 document.getElementById('showCustomBtn').style.display = 'none';
                 document.getElementById('statCustomCard').style.display = 'none';
+                // Moderators can only generate trial links
+                const customOpt = document.getElementById('linkCustomOption');
+                if(customOpt) customOpt.style.display = 'none';
             }}
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainPanel').style.display = 'block';
             loadStats(); loadMyLicenses(); loadHistory(); loadUserRequests(); loadRegistrationLinks();
+            updateLinkCostPreview();
         }} else {{
             document.getElementById('loginError').style.display = 'block';
         }}
@@ -1796,6 +1827,28 @@ def get_admin_html():
         }} else {{ resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${{data.error}}`; }}
     }}
     
+    function updateLinkCostPreview() {{
+        const licenseType = document.getElementById('linkLicenseType').value;
+        const durationType = document.getElementById('linkDurationType').value;
+        const durationValue = parseFloat(document.getElementById('linkDurationValue').value) || 0;
+        let cost = 0;
+        const pricing = {{ trial_hour: 2, custom_hour: 2, custom_day: 5, custom_week: 8, custom_month: 50, custom_year: 800, custom_unlimited: 1500 }};
+        if(licenseType === 'trial') {{
+            cost = Math.round(durationValue * 0.1 * 100) / 100;
+        }} else {{
+            if(durationType === 'hours') cost = durationValue * pricing.custom_hour;
+            else if(durationType === 'days') cost = durationValue * pricing.custom_day;
+            else if(durationType === 'weeks') cost = durationValue * pricing.custom_week;
+            else if(durationType === 'months') cost = durationValue * pricing.custom_month;
+            else if(durationType === 'years') cost = durationValue * pricing.custom_year;
+            else if(durationType === 'unlimited') cost = pricing.custom_unlimited;
+            cost = Math.round(cost * 100) / 100;
+        }}
+        const preview = document.getElementById('linkCostPreview');
+        document.getElementById('linkCostValue').textContent = cost;
+        preview.style.display = cost > 0 ? 'block' : 'none';
+    }}
+    
     async function generateRegistrationLink() {{
         const licenseType = document.getElementById('linkLicenseType').value;
         const durationType = document.getElementById('linkDurationType').value;
@@ -1804,6 +1857,11 @@ def get_admin_html():
         
         if(!durationValue || durationValue <= 0) {{
             alert('Please enter a valid duration value');
+            return;
+        }}
+        
+        if(currentRole === 'moderator' && licenseType === 'custom') {{
+            alert('Moderators can only generate Trial registration links.');
             return;
         }}
         
@@ -1822,7 +1880,9 @@ def get_admin_html():
         const data = await res.json();
         if(data.success) {{
             const fullLink = `${{API_URL}}/register/${{data.token}}`;
-            alert(`Registration link created!\\n\\n${{fullLink}}\\n\\nShare this link with the user. It expires in 7 days and can only be used once.`);
+            const msg = `✅ Registration link created!\n\n🔗 LINK:\n${{fullLink}}\n\n💰 Credits used: ${{data.credits_used}}\n💳 Remaining: ${{data.remaining_credits}}\n\n⏰ Expires in 24 hours. Link auto-refunds if unused.`;
+            if(navigator.clipboard) navigator.clipboard.writeText(fullLink).catch(()=>{{}});
+            alert(msg);
             loadRegistrationLinks();
             loadStats();
         }} else {{
@@ -1838,35 +1898,64 @@ def get_admin_html():
                 admin_password: document.getElementById('loginPassword').value
             }})
         }});
-        
         const data = await res.json();
-        let html = '<div class="table-wrapper"><table><thead><tr><th>Link</th><th>Type</th><th>Duration</th><th>Devices</th><th>Status</th><th>Created</th><th>Expires</th><th>Action</th></tr></thead><tbody>';
-        
+        if(!data.links || data.links.length === 0) {{
+            document.getElementById('linksList').innerHTML = '<div style="text-align:center; padding:30px; color: var(--text-secondary);"><i class="fas fa-link" style="font-size:32px; opacity:0.3;"></i><br><br>No registration links yet.</div>';
+            return;
+        }}
+        let html = '<div style="display:grid; gap:12px;">';
         data.links.forEach(link => {{
             const fullLink = `${{API_URL}}/register/${{link.token}}`;
-            const statusBadge = link.used ? 'badge-used' : 'badge-unused';
-            const statusText = link.used ? 'USED' : 'ACTIVE';
-            
+            const isUsed = link.used;
+            const expires = new Date(link.expires_at);
+            const now = new Date();
+            const isExpired = now > expires;
+            const minsLeft = Math.max(0, Math.round((expires - now) / 60000));
+            const hoursLeft = Math.floor(minsLeft / 60);
+            const minsRem = minsLeft % 60;
+            const timeLeft = isExpired ? '<span style="color:var(--danger);">Expired</span>' : `<span style="color:var(--warning);">${{hoursLeft}}h ${{minsRem}}m left</span>`;
             let durationDisplay = link.duration_type === 'unlimited' ? 'UNLIMITED' : `${{link.duration_value}} ${{link.duration_type}}`;
-            
-            html += `<tr>
-                <td><code style="font-size: 11px;">${{fullLink.substring(0, 50)}}...</code> <button class="copy-btn" onclick="copyToClipboard('${{fullLink}}')"><i class="fas fa-copy"></i></button></td>
-                <td><span class="badge badge-active">${{link.license_type.toUpperCase()}}</span></td>
-                <td>${{durationDisplay}}</td>
-                <td>${{link.max_devices}}</td>
-                <td><span class="badge ${{statusBadge}}">${{statusText}}</span></td>
-                <td>${{new Date(link.created_at).toLocaleString()}}</td>
-                <td>${{new Date(link.expires_at).toLocaleString()}}</td>
-                <td>${{!link.used ? `<button class="btn-danger" onclick="deleteRegistrationLink('${{link.token}}')"><i class="fas fa-trash"></i></button>` : '-'}}</td>
-            </tr>`;
+            const statusColor = isUsed ? 'var(--secondary)' : (isExpired ? 'var(--danger)' : 'var(--warning)');
+            const statusText = isUsed ? '✓ Used' : (isExpired ? '✗ Expired' : '◉ Active');
+            html += `
+            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:14px; padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+                            <span style="background:rgba(124,58,237,0.2); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:var(--primary);">${{link.license_type.toUpperCase()}}</span>
+                            <span style="font-size:12px; font-weight:700; color:${{statusColor}};">${{statusText}}</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">${{timeLeft}}</span>
+                            ${{(link.credits_cost && link.credits_cost > 0) ? `<span style="font-size:11px; color:var(--text-secondary);"><i class="fas fa-coins"></i> ${{link.credits_cost}} cr</span>` : ''}}
+                        </div>
+                        <div style="font-family:monospace; font-size:11px; color:var(--text-secondary); word-break:break-all; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px; margin-bottom:8px;">
+                            ${{fullLink}}
+                        </div>
+                        <div style="display:flex; gap:16px; font-size:12px; color:var(--text-secondary); flex-wrap:wrap;">
+                            <span><i class="fas fa-clock"></i> ${{durationDisplay}}</span>
+                            <span><i class="fas fa-microchip"></i> ${{link.max_devices}} device(s)</span>
+                            <span><i class="fas fa-user"></i> By: ${{link.created_by}}</span>
+                            ${{isUsed ? `<span><i class="fas fa-check-circle" style="color:var(--secondary);"></i> Used by: ${{link.used_by || '-'}}</span>` : ''}}
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:8px; min-width:100px;">
+                        ${{!isUsed && !isExpired ? `<button onclick="copyLinkToClipboard('${{fullLink}}')" style="padding:8px 14px; font-size:12px; background:rgba(59,130,246,0.3); border:1px solid rgba(59,130,246,0.5);"><i class="fas fa-copy"></i> Copy</button>` : ''}}
+                        ${{!isUsed && !isExpired ? `<button class="btn-danger" onclick="cancelRegistrationLink('${{link.token}}')" style="padding:8px 14px; font-size:12px;"><i class="fas fa-times"></i> Cancel</button>` : ''}}
+                    </div>
+                </div>
+            </div>`;
         }});
-        
-        html += '</tbody></table></div>';
-        document.getElementById('linksList').innerHTML = html || '<p>No active registration links</p>';
+        html += '</div>';
+        document.getElementById('linksList').innerHTML = html;
     }}
-    
-    async function deleteRegistrationLink(token) {{
-        if(!confirm('Delete this registration link?')) return;
+
+    function copyLinkToClipboard(text) {{
+        navigator.clipboard.writeText(text).then(() => alert('✓ Link copied to clipboard!')).catch(() => {{
+            prompt('Copy this link:', text);
+        }});
+    }}
+
+    async function cancelRegistrationLink(token) {{
+        if(!confirm('Cancel this link? If unused, your credits will be refunded.')) return;
         const res = await fetch(API_URL + '/api/admin/delete-registration-link', {{
             method: 'POST', headers: {{'Content-Type': 'application/json'}},
             body: JSON.stringify({{
@@ -1877,6 +1966,11 @@ def get_admin_html():
         }});
         const data = await res.json();
         if(data.success) {{
+            if(data.refunded_credits > 0) {{
+                alert(`✅ Link cancelled! ${{data.refunded_credits}} credits refunded.`);
+            }} else {{
+                alert('Link cancelled.');
+            }}
             loadRegistrationLinks();
             loadStats();
         }} else {{
@@ -1918,7 +2012,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '<div class="table-wrapper">能懈<tr><th>License</th><th>Username</th><th>Password</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+        let html = '<div class="table-wrapper"><table><thead><tr><th>License</th><th>Username</th><th>Password</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         data.activations.forEach(a => {{
             html += `<tr>
                 <td>${{a.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{a.license_key}}')"><i class="fas fa-copy"></i></button></td>
@@ -1962,7 +2056,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         data.requests.forEach((req, idx) => {{
             html += `<tr>
                 <td>${{new Date(req.created_at).toLocaleString()}}</td>
@@ -2008,7 +2102,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<tr><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr></thead><tbody>';
         data.history.forEach(h => {{
             html += `<tr>
                 <td>${{new Date(h.created_at).toLocaleString()}}</td>
@@ -2056,15 +2150,27 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let adminsHtml = '能懈<tr><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
-        data.admins.forEach(a => {{ adminsHtml += `<tr><td>${{a.username}}</td><td>${{a.credits}}</td><td>${{a.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteAdmin('${{a.username}}')"><i class="fas fa-trash"></i></button></td>`; }});
-        adminsHtml += '</table>';
-        document.getElementById('adminsList').innerHTML = adminsHtml;
-        
-        let modsHtml = '能懈<tr><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
-        data.moderators.forEach(m => {{ modsHtml += `<tr><td>${{m.username}}</td><td>${{m.credits}}</td><td>${{m.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteModerator('${{m.username}}')"><i class="fas fa-trash"></i></button></td>`; }});
-        modsHtml += '</table>';
-        document.getElementById('moderatorsList').innerHTML = modsHtml;
+
+        function makeUserTable(users, deleteFunc) {{
+            if(!users || users.length === 0) {{
+                return '<div style="text-align:center; padding:20px; color:var(--text-secondary); font-size:13px;"><i class="fas fa-users" style="opacity:0.3;"></i><br>None yet</div>';
+            }}
+            let h = '<table style="width:100%; border-collapse:collapse; font-size:13px;"><thead><tr style="background:rgba(124,58,237,0.15);"><th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--primary); border-bottom:1px solid var(--border);">User</th><th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--primary); border-bottom:1px solid var(--border);">Credits</th><th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--primary); border-bottom:1px solid var(--border);">Created</th><th style="padding:10px 12px; text-align:left; font-weight:600; color:var(--primary); border-bottom:1px solid var(--border);"></th></tr></thead><tbody>';
+            users.forEach(u => {{
+                const created = u.created_at ? new Date(u.created_at).toLocaleDateString() : '-';
+                h += `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 12px; font-weight:600;"><i class="fas fa-user" style="color:var(--primary); margin-right:6px; font-size:11px;"></i>${{u.username}}</td>
+                    <td style="padding:10px 12px;"><span style="background:rgba(124,58,237,0.2); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700;">${{u.credits}}</span></td>
+                    <td style="padding:10px 12px; color:var(--text-secondary); font-size:12px;">${{created}}</td>
+                    <td style="padding:10px 12px;"><button onclick="${{deleteFunc}}('${{u.username}}')" style="background:var(--danger); padding:5px 10px; font-size:11px; border-radius:8px; width:auto;"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+            }});
+            h += '</tbody></table>';
+            return h;
+        }}
+
+        document.getElementById('adminsList').innerHTML = makeUserTable(data.admins, 'deleteAdmin');
+        document.getElementById('moderatorsList').innerHTML = makeUserTable(data.moderators, 'deleteModerator');
     }}
     
     async function addAdmin() {{
@@ -2650,23 +2756,27 @@ def admin_generate_registration_link():
     auth = check_admin_auth(data)
     if not auth["authorized"]:
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-    
+
+    # Moderators can only generate trial links
     license_type = data.get("license_type", "trial")
+    if auth["role"] == "moderator" and license_type == "custom":
+        return jsonify({"success": False, "error": "Moderators can only generate trial registration links"}), 403
+
     duration_value = float(data.get("duration_value", 1))
     duration_type = data.get("duration_type", "days")
     max_devices = int(data.get("max_devices", 1))
-    
-    # Check credits
+
+    # Calculate credit cost (same pricing as direct creation)
     credits_cost = calculate_credits_cost(license_type, duration_value, duration_type)
     if auth["role"] != "master":
         if not deduct_credits(auth["username"], credits_cost):
             return jsonify({"success": False, "error": f"Insufficient credits. Need {credits_cost} credits"}), 400
-    
-    token = generate_registration_link(license_type, duration_value, duration_type, max_devices, auth["username"])
-    
+
+    token = generate_registration_link(license_type, duration_value, duration_type, max_devices, auth["username"], credits_cost)
+
     save_data()
     remaining = get_credits(auth["username"])
-    
+
     return jsonify({
         "success": True,
         "token": token,
@@ -2706,17 +2816,24 @@ def admin_delete_registration_link():
     auth = check_admin_auth(data)
     if not auth["authorized"]:
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-    
+
     token = data.get("token", "")
-    
+
     if token in REGISTRATION_LINKS:
-        if auth["role"] != "master" and REGISTRATION_LINKS[token].get("created_by") != auth["username"]:
+        link = REGISTRATION_LINKS[token]
+        if auth["role"] != "master" and link.get("created_by") != auth["username"]:
             return jsonify({"success": False, "error": "Not your link"}), 403
-        
+
+        # Refund credits if link was not used
+        refunded = 0
+        if not link.get("used") and link.get("credits_cost", 0) > 0:
+            refunded = link["credits_cost"]
+            add_credits(link["created_by"], refunded)
+
         del REGISTRATION_LINKS[token]
         save_data()
-        return jsonify({"success": True}), 200
-    
+        return jsonify({"success": True, "refunded_credits": refunded}), 200
+
     return jsonify({"success": False, "error": "Link not found"}), 404
 
 @app.route('/register/<token>')
@@ -2823,20 +2940,26 @@ def register_from_link(token):
             expires_at = now + timedelta(days=duration_value * 365)
     
     if license_type == "trial":
+        # Trial: registered but NOT activated. Timer starts on first tool login.
         TRIAL_LICENSES[license_key] = {
             "type": "trial",
             "owner": link_data["created_by"],
             "hwids": [],
             "max_devices": max_devices,
-            "duration_hours": duration_value if duration_type == "hours" else duration_value * 24,
+            "duration_hours": duration_value if duration_type == "hours" else (
+                duration_value * 24 if duration_type == "days" else
+                duration_value * 168 if duration_type == "weeks" else
+                duration_value * 720 if duration_type == "months" else
+                duration_value * 8760 if duration_type == "years" else duration_value
+            ),
             "start_time": None,
-            "expires_at": expires_at.isoformat() if expires_at else None,
+            "expires_at": None,  # Will be set on first activation via /api/activate
             "activated": False,
             "created_at": now.isoformat()
         }
         TRIAL_USERS[username] = {"password": password, "linked_license": license_key}
-        
-    else:  # custom
+
+    else:  # custom — activate immediately
         CUSTOM_ACTIVATIONS[license_key] = {
             "username": username,
             "password": password,
@@ -2846,7 +2969,8 @@ def register_from_link(token):
             "max_devices": max_devices,
             "expires_at": expires_at.isoformat() if expires_at else None,
             "created_at": now.isoformat(),
-            "activated": False
+            "activated": True,
+            "activated_at": now.isoformat()
         }
         VALID_USERS[username] = password
     
