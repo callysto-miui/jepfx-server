@@ -143,8 +143,8 @@ MASTER_ADMIN = {
     "created_at": None
 }
 
-ADMINS = {}  # Can access: Trial + Custom (no permanent)
-MODERATORS = {}  # Can access: Trial only
+ADMINS = {}
+MODERATORS = {}
 
 # ==================================================
 # 📝 LICENSES & USERS
@@ -398,7 +398,7 @@ def find_license_by_credentials(username, password):
     return None, None, None
 
 # ==================================================
-# 🔍 MONITORING THREAD (Updated for activation-based expiry)
+# 🔍 MONITORING THREAD
 # ==================================================
 def monitor_expired_licenses():
     while True:
@@ -406,7 +406,6 @@ def monitor_expired_licenses():
             now = datetime.utcnow()
             changes_made = False
             
-            # Check expired custom activations (only if activated)
             for key, activation in list(CUSTOM_ACTIVATIONS.items()):
                 if activation.get("expires_at") and activation.get("activated", False):
                     exp_time = datetime.fromisoformat(activation["expires_at"])
@@ -414,14 +413,10 @@ def monitor_expired_licenses():
                         del CUSTOM_ACTIVATIONS[key]
                         changes_made = True
             
-            # Check expired permanent licenses (never expire)
-            
-            # Check expired trial licenses (only if activated)
             for key, lic in list(TRIAL_LICENSES.items()):
                 if lic.get("expires_at") and lic.get("activated", False):
                     exp_time = datetime.fromisoformat(lic["expires_at"])
                     if now > exp_time:
-                        # Remove linked user
                         for user, user_data in list(TRIAL_USERS.items()):
                             if user_data.get("linked_license") == key:
                                 del TRIAL_USERS[user]
@@ -438,7 +433,7 @@ monitor_thread = threading.Thread(target=monitor_expired_licenses, daemon=True)
 monitor_thread.start()
 
 # ==================================================
-# 🎨 ADMIN PANEL HTML (With Theme)
+# 🎨 ADMIN PANEL HTML
 # ==================================================
 def get_admin_html():
     return f"""
@@ -469,22 +464,14 @@ def get_admin_html():
         .btn-danger {{ background: var(--danger); }}
         .btn-success {{ background: var(--secondary); }}
         .btn-warning {{ background: var(--warning); }}
-        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; display: block; overflow-x: auto; }}
-        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }}
         .result-box {{ padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 3px solid var(--primary); }}
         .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }}
-        .modal-content {{ margin: 5% auto; padding: 25px; border-radius: 15px; width: 90%; max-width: 600px; position: relative; }}
+        .modal-content {{ margin: 5% auto; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; }}
         .close {{ float: right; font-size: 28px; cursor: pointer; }}
         .master-only {{ border-left: 3px solid var(--danger); padding: 10px; margin: 10px 0; border-radius: 5px; }}
         .copy-btn {{ background: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; margin-left: 5px; cursor: pointer; display: inline-block; }}
         .badge {{ display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; }}
-        .badge-pending {{ background: var(--warning); }}
-        .badge-approved {{ background: var(--secondary); }}
-        .badge-rejected {{ background: var(--danger); }}
-        .role-badge {{ background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 12px; }}
-        .credentials-popup {{ background: var(--card-bg); border-radius: 15px; padding: 20px; margin-top: 10px; }}
-        .credentials-popup code {{ background: rgba(0,0,0,0.3); padding: 8px; border-radius: 5px; display: inline-block; margin: 5px 0; }}
-        .copy-all-btn {{ background: var(--secondary); }}
+        .pre-style {{ font-family: monospace; white-space: pre; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; }}
     </style>
 </head>
 <body>
@@ -501,7 +488,6 @@ def get_admin_html():
         <div class="header">
             <h1>⚡ JEPFX ADMIN PANEL</h1>
             <p>Welcome, <span id="currentUser">-</span> | Role: <span id="currentRole">-</span> | Credits: <span id="currentCredits">0</span></p>
-            <div id="roleInfo" class="result-box" style="margin-top: 10px; font-size: 14px;"></div>
         </div>
         
         <div class="stats-grid">
@@ -512,7 +498,7 @@ def get_admin_html():
             <div class="stat-card"><div class="stat-number" id="statRequests">0</div><div>Requests</div></div>
         </div>
         
-        <div class="tabs" id="tabsContainer">
+        <div class="tabs">
             <button class="tab active" onclick="switchTab('generateTrial')">🎲 TRIAL</button>
             <button class="tab" id="customTab" onclick="switchTab('customActivation')">✨ CUSTOM</button>
             <button class="tab" id="permanentTab" style="display: none;" onclick="switchTab('permanentLicense')">🔑 PERMANENT</button>
@@ -530,7 +516,7 @@ def get_admin_html():
                 <option value="3">3 Hours (2 credits)</option>
                 <option value="6">6 Hours (3 credits)</option>
                 <option value="12">12 Hours (4 credits)</option>
-                <option value="24">1 Day (5 credit)</option>
+                <option value="24">1 Day (5 credits)</option>
                 <option value="72">3 Days (10 credits)</option>
                 <option value="168">1 Week (20 credits)</option>
                 <option value="720">1 Month (50 credits)</option>
@@ -654,7 +640,7 @@ def get_admin_html():
         <h2 id="modalTitle">🔑 License Credentials</h2>
         <div id="modalBody"></div>
         <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="copy-all-btn" onclick="copyAllCredentials()">📋 Copy All</button>
+            <button class="btn-success" onclick="copyStyledCredentials()">📋 COPY STYLIZED</button>
             <button onclick="closeModal()">Close</button>
         </div>
     </div>
@@ -665,6 +651,7 @@ def get_admin_html():
 <script>
     const API_URL = window.location.origin;
     let currentUser = null, currentRole = null;
+    let lastGeneratedData = null;
     
     async function login() {{
         const username = document.getElementById('loginUsername').value;
@@ -680,25 +667,20 @@ def get_admin_html():
             document.getElementById('currentRole').textContent = data.role.toUpperCase();
             document.getElementById('currentCredits').textContent = data.credits || 'Unlimited';
             
-            let roleInfo = '';
             if(data.role === 'master') {{
-                roleInfo = '👑 Master: Full access (Trial, Custom, Permanent)';
                 document.getElementById('adminTab').style.display = 'block';
                 document.getElementById('permanentTab').style.display = 'block';
                 document.getElementById('showPermanentBtn').style.display = 'inline-block';
                 document.getElementById('statPermanentCard').style.display = 'block';
             }} else if(data.role === 'admin') {{
-                roleInfo = '⚙️ Admin: Trial + Custom licenses';
                 document.getElementById('customTab').style.display = 'inline-block';
                 document.getElementById('showCustomBtn').style.display = 'inline-block';
                 document.getElementById('statCustomCard').style.display = 'block';
             }} else {{
-                roleInfo = '🔧 Moderator: Trial licenses only';
                 document.getElementById('customTab').style.display = 'none';
                 document.getElementById('showCustomBtn').style.display = 'none';
                 document.getElementById('statCustomCard').style.display = 'none';
             }}
-            document.getElementById('roleInfo').innerHTML = roleInfo;
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainPanel').style.display = 'block';
             loadStats(); loadMyLicenses(); loadHistory(); loadUserRequests();
@@ -744,44 +726,55 @@ def get_admin_html():
         }}
     }}
     
-    function formatDuration(hours) {{
-        if(hours >= 720) return Math.floor(hours/720) + ' Months';
-        if(hours >= 168) return Math.floor(hours/168) + ' Weeks';
-        if(hours >= 24) return Math.floor(hours/24) + ' Days';
-        return hours + ' Hours';
+    function formatDurationHours(hours) {{
+        if(hours >= 720) return Math.floor(hours/720) + ' MONTHS';
+        if(hours >= 168) return Math.floor(hours/168) + ' WEEKS';
+        if(hours >= 24) return Math.floor(hours/24) + ' DAYS';
+        return hours + ' HOURS';
     }}
     
-    function showCredentialsPopup(licenseKey, username, password, durationHours, maxDevices) {{
+    function getStyledCredentials(licenseKey, username, password, durationText, maxDevices, licenseType) {{
+        return `✅ ${{licenseType}} CREATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔑 LICENSE: ${{licenseKey}}
+👤 USER: ${{username}}
+🔒 PASS: ${{password}}
+⏱️ TIME: ${{durationText}}
+💻 MAX DEVICES: ${{maxDevices}}
+🌐 CHECK STATUS: jepfx-tool-server.onrender.com/user
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ License activates ONLY on first use!`;
+    }}
+    
+    function showCredentialsModal(licenseKey, username, password, durationText, maxDevices, licenseType) {{
+        lastGeneratedData = {{licenseKey, username, password, durationText, maxDevices, licenseType}};
+        const styledText = getStyledCredentials(licenseKey, username, password, durationText, maxDevices, licenseType);
         const modal = document.getElementById('credsModal');
-        const durationText = formatDuration(durationHours);
-        document.getElementById('modalTitle').innerHTML = '🔑 License Generated';
+        document.getElementById('modalTitle').innerHTML = '🔑 LICENSE GENERATED';
         document.getElementById('modalBody').innerHTML = `
-            <div class="credentials-popup">
-                <p><strong>🔑 License Key:</strong> <code>${{licenseKey}}</code> <button class="copy-btn" onclick="copyToClipboard('${{licenseKey}}')">Copy</button></p>
-                <p><strong>👤 Username:</strong> <code>${{username}}</code> <button class="copy-btn" onclick="copyToClipboard('${{username}}')">Copy</button></p>
-                <p><strong>🔒 Password:</strong> <code>${{password}}</code> <button class="copy-btn" onclick="copyToClipboard('${{password}}')">Copy</button></p>
-                <p><strong>⏰ Time:</strong> ${{durationText}}</p>
-                <p><strong>💻 Max Devices:</strong> ${{maxDevices}}</p>
-                <p><strong>🌐 Website Check:</strong> <code>jepfx-tool-server.onrender.com/user</code> <button class="copy-btn" onclick="copyToClipboard('jepfx-tool-server.onrender.com/user')">Copy</button></p>
-                <hr style="margin: 15px 0; border-color: var(--border);">
-                <p><strong>📝 Instructions:</strong></p>
-                <ul style="margin-left: 20px;">
-                    <li>License will start counting ONLY after first activation</li>
-                    <li>Can be used on up to ${{maxDevices}} device(s)</li>
-                    <li>Check status at: jepfx-tool-server.onrender.com/user</li>
-                </ul>
+            <div class="pre-style">${{styledText.replace(/\\n/g, '<br>')}}</div>
+            <div style="margin-top: 15px; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px;">
+                <p style="font-size: 13px;">✅ License saved in history<br>✅ You can find it in "MY LICENSES" tab</p>
             </div>
         `;
         modal.style.display = 'block';
     }}
     
-    function copyToClipboard(text) {{ navigator.clipboard.writeText(text); alert('Copied: ' + text); }}
-    function copyAllCredentials() {{
-        let text = '';
-        document.querySelectorAll('#modalBody code').forEach(el => text += el.innerText + '\\n');
+    function copyStyledCredentials() {{
+        if(!lastGeneratedData) return;
+        const text = getStyledCredentials(
+            lastGeneratedData.licenseKey, 
+            lastGeneratedData.username, 
+            lastGeneratedData.password, 
+            lastGeneratedData.durationText, 
+            lastGeneratedData.maxDevices, 
+            lastGeneratedData.licenseType
+        );
         navigator.clipboard.writeText(text);
-        alert('All credentials copied!');
+        alert('✓ Credentials copied to clipboard!');
     }}
+    
+    function copyToClipboard(text) {{ navigator.clipboard.writeText(text); alert('Copied!'); }}
     
     async function generateTrial() {{
         const duration = document.getElementById('trialDuration').value;
@@ -799,8 +792,9 @@ def get_admin_html():
         const resultDiv = document.getElementById('trialResult');
         resultDiv.style.display = 'block';
         if(data.success) {{
-            showCredentialsPopup(data.license_key, data.username, data.password, parseInt(duration), maxDevices);
-            resultDiv.innerHTML = `✅ LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}<br>⏰ License activates ONLY on first use!`;
+            const durationText = formatDurationHours(parseInt(duration));
+            showCredentialsModal(data.license_key, data.username, data.password, durationText, maxDevices, 'TRIAL');
+            resultDiv.innerHTML = `✅ TRIAL LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
             loadStats(); loadMyLicenses(); loadHistory();
         }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
     }}
@@ -830,19 +824,10 @@ def get_admin_html():
         const resultDiv = document.getElementById('customResult');
         resultDiv.style.display = 'block';
         if(data.success) {{
-            const modal = document.getElementById('credsModal');
-            document.getElementById('modalTitle').innerHTML = '🔑 Custom License Created';
-            document.getElementById('modalBody').innerHTML = `
-                <div class="credentials-popup">
-                    <p><strong>🔑 License Key:</strong> <code>${{license}}</code> <button class="copy-btn" onclick="copyToClipboard('${{license}}')">Copy</button></p>
-                    <p><strong>👤 Username:</strong> <code>${{username}}</code> <button class="copy-btn" onclick="copyToClipboard('${{username}}')">Copy</button></p>
-                    <p><strong>🔒 Password:</strong> <code>${{password}}</code> <button class="copy-btn" onclick="copyToClipboard('${{password}}')">Copy</button></p>
-                    <p><strong>📅 Expires:</strong> ${{data.expires_at || 'NEVER'}}</p>
-                    <p><strong>💻 Max Devices:</strong> ${{maxDevices}}</p>
-                    <p><strong>🌐 Website Check:</strong> <code>jepfx-tool-server.onrender.com/user</code></p>
-                </div>
-            `;
-            modal.style.display = 'block';
+            let durationText = '';
+            if(durationType === 'unlimited') durationText = 'UNLIMITED';
+            else durationText = durationValue + ' ' + durationType.toUpperCase();
+            showCredentialsModal(license, username, password, durationText, maxDevices, 'CUSTOM');
             resultDiv.innerHTML = `✅ CUSTOM LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
             document.getElementById('customUsername').value = '';
             document.getElementById('customPassword').value = '';
@@ -873,19 +858,7 @@ def get_admin_html():
         const resultDiv = document.getElementById('permResult');
         resultDiv.style.display = 'block';
         if(data.success) {{
-            const modal = document.getElementById('credsModal');
-            document.getElementById('modalTitle').innerHTML = '🔑 Permanent License Created';
-            document.getElementById('modalBody').innerHTML = `
-                <div class="credentials-popup">
-                    <p><strong>🔑 License Key:</strong> <code>${{license}}</code> <button class="copy-btn" onclick="copyToClipboard('${{license}}')">Copy</button></p>
-                    <p><strong>👤 Username:</strong> <code>${{username || 'N/A'}}</code></p>
-                    <p><strong>🔒 Password:</strong> <code>${{password || 'N/A'}}</code></p>
-                    <p><strong>📅 Expires:</strong> NEVER (Permanent)</p>
-                    <p><strong>💻 Max Devices:</strong> ${{maxDevices}}</p>
-                    <p><strong>🌐 Website Check:</strong> <code>jepfx-tool-server.onrender.com/user</code></p>
-                </div>
-            `;
-            modal.style.display = 'block';
+            showCredentialsModal(license, username || 'N/A', password || 'N/A', 'PERMANENT (NEVER EXPIRES)', maxDevices, 'PERMANENT');
             resultDiv.innerHTML = `✅ PERMANENT LICENSE CREATED!<br>💰 Remaining: ${{data.remaining_credits}}`;
             document.getElementById('permLicenseKey').value = '';
             document.getElementById('permUsername').value = '';
@@ -906,13 +879,13 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '<table><tr><th>License</th><th>Max Devices</th><th>Used Devices</th><th>Activated</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
+        let html = '能懈<table><th>License</th><th>Max Devices</th><th>Used</th><th>Activated</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
         data.trials.forEach(t => {{
             html += `<tr>
                 <td>${{t.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{t.license_key}}')">Copy</button></td>
                 <td>${{t.max_devices || 1}}</td>
                 <td>${{t.hwid_count || 0}}</td>
-                <td>${{t.activated ? '✅ Yes' : '⏳ Not yet'}}</td>
+                <td>${{t.activated ? '✅ Yes' : '⏳ No'}}</td>
                 <td>${{t.expires_at || '-'}}</td>
                 <td>${{t.status}}</td>
                 <td><button class="btn-danger" onclick="deleteTrial('${{t.license_key}}')">Delete</button></td>
@@ -928,11 +901,12 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '<table><tr><th>License</th><th>Username</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
+        let html = '能懈<table><th>License</th><th>Username</th><th>Password</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
         data.activations.forEach(a => {{
             html += `<tr>
                 <td>${{a.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{a.license_key}}')">Copy</button></td>
                 <td>${{a.username}} <button class="copy-btn" onclick="copyToClipboard('${{a.username}}')">Copy</button></td>
+                <td>${{a.password}} <button class="copy-btn" onclick="copyToClipboard('${{a.password}}')">Copy</button></td>
                 <td>${{a.max_devices || 1}}</td>
                 <td>${{a.hwids ? a.hwids.length : 0}}</td>
                 <td>${{a.expires_at || 'NEVER'}}</td>
@@ -950,7 +924,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '<table><tr><th>License</th><th>Username</th><th>Max Devices</th><th>Used</th><th>Status</th><th>Action</th></tr>';
+        let html = '能懈<table><th>License</th><th>Username</th><th>Max Devices</th><th>Used</th><th>Status</th><th>Action</th></tr>';
         data.licenses.forEach(l => {{
             html += `<tr>
                 <td>${{l.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{l.license_key}}')">Copy</button></td>
@@ -971,7 +945,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '<table><tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr>';
+        let html = '能懈<tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr>';
         data.requests.forEach((req, idx) => {{
             html += `<tr>
                 <td>${{new Date(req.created_at).toLocaleString()}}</td>
@@ -1017,7 +991,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '<table><tr><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr>';
+        let html = '能懈<table><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr>';
         data.history.forEach(h => {{
             html += `<tr>
                 <td>${{new Date(h.created_at).toLocaleString()}}</td>
@@ -1027,25 +1001,25 @@ def get_admin_html():
                 <td>${{h.type}}</td>
                 <td>${{h.owner}}</td>
                 <td>${{h.expires_at || 'NEVER'}}</td>
-                <td><button onclick="showCredentialsOld('${{h.license_key}}', '${{h.username}}', '${{h.password}}', '${{h.type}}', '${{h.expires_at}}')">View</button></td>
+                <td><button onclick="showHistoryCredentials('${{h.license_key}}', '${{h.username}}', '${{h.password}}', '${{h.type}}', '${{h.expires_at}}')">View</button></td>
             </tr>`;
         }});
         html += '</table>';
         document.getElementById('historyList').innerHTML = html;
     }}
     
-    function showCredentialsOld(key, user, pass, type, expires) {{
+    function showHistoryCredentials(licenseKey, username, password, type, expires) {{
+        const styledText = `📜 LICENSE FROM HISTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔑 LICENSE: ${{licenseKey}}
+👤 USER: ${{username}}
+🔒 PASS: ${{password}}
+📋 TYPE: ${{type}}
+⏰ EXPIRES: ${{expires || 'NEVER'}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
         const modal = document.getElementById('credsModal');
-        document.getElementById('modalTitle').innerHTML = `🔑 ${{key}}`;
-        document.getElementById('modalBody').innerHTML = `
-            <div class="credentials-popup">
-                <p><strong>License:</strong> <code>${{key}}</code> <button class="copy-btn" onclick="copyToClipboard('${{key}}')">Copy</button></p>
-                <p><strong>Username:</strong> <code>${{user}}</code> <button class="copy-btn" onclick="copyToClipboard('${{user}}')">Copy</button></p>
-                <p><strong>Password:</strong> <code>${{pass}}</code> <button class="copy-btn" onclick="copyToClipboard('${{pass}}')">Copy</button></p>
-                <p><strong>Type:</strong> ${{type}}</p>
-                <p><strong>Expires:</strong> ${{expires || 'NEVER'}}</p>
-            </div>
-        `;
+        document.getElementById('modalTitle').innerHTML = '📜 History Credentials';
+        document.getElementById('modalBody').innerHTML = `<div class="pre-style">${{styledText.replace(/\\n/g, '<br>')}}</div>`;
         modal.style.display = 'block';
     }}
     
@@ -1065,12 +1039,12 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let adminsHtml = '<table><tr><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
+        let adminsHtml = '能懈</table><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
         data.admins.forEach(a => {{ adminsHtml += `<tr><td>${{a.username}}</td><td>${{a.credits}}</td><td>${{a.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteAdmin('${{a.username}}')">Delete</button></td></tr>`; }});
         adminsHtml += '</table>';
         document.getElementById('adminsList').innerHTML = adminsHtml;
         
-        let modsHtml = '<table><tr><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
+        let modsHtml = '能懈<table><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
         data.moderators.forEach(m => {{ modsHtml += `<tr><td>${{m.username}}</td><td>${{m.credits}}</td><td>${{m.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteModerator('${{m.username}}')">Delete</button></td></tr>`; }});
         modsHtml += '</table>';
         document.getElementById('moderatorsList').innerHTML = modsHtml;
@@ -1166,7 +1140,7 @@ def get_admin_html():
     return ADMIN_HTML
 
 # ==================================================
-# 🎨 USER PORTAL HTML (With Theme)
+# 🎨 USER PORTAL HTML
 # ==================================================
 def get_user_portal_html():
     return f"""
@@ -1385,7 +1359,7 @@ def get_user_portal_html():
     return USER_PORTAL_HTML
 
 # ==================================================
-# 🔐 API ENDPOINTS (Updated for new features)
+# 🔐 API ENDPOINTS
 # ==================================================
 
 @app.route('/api/set-theme', methods=['POST'])
@@ -1481,7 +1455,6 @@ def change_user_role():
     if target_username == MASTER_ADMIN["username"]:
         return jsonify({"success": False, "error": "Cannot change master admin role"}), 400
     
-    # Remove from current role
     if target_username in ADMINS:
         user_data = ADMINS.pop(target_username)
     elif target_username in MODERATORS:
@@ -1489,7 +1462,6 @@ def change_user_role():
     else:
         return jsonify({"success": False, "error": "User not found"}), 404
     
-    # Add to new role
     if new_role == "admin":
         ADMINS[target_username] = user_data
     else:
@@ -1537,8 +1509,6 @@ def generate_trial():
     lic = f"JEPFX-TRIAL-{uuid.uuid4().hex[:8].upper()}"
     user = f"TRIAL-{uuid.uuid4().hex[:6].upper()}"
     pwd = uuid.uuid4().hex[:10].upper()
-    # Don't set expiry yet - will start when activated
-    expires_at = None
     
     TRIAL_LICENSES[lic] = {
         "type": "trial",
@@ -1547,7 +1517,7 @@ def generate_trial():
         "max_devices": max_devices,
         "duration_hours": dur,
         "start_time": None,
-        "expires_at": None,  # No expiry until activated
+        "expires_at": None,
         "activated": False,
         "created_at": datetime.utcnow().isoformat()
     }
@@ -1563,7 +1533,6 @@ def generate_trial():
         "license_key": lic,
         "username": user,
         "password": pwd,
-        "expires_at": "Not activated yet",
         "credits_used": credits_cost,
         "remaining_credits": remaining,
         "max_devices": max_devices
@@ -1655,10 +1624,6 @@ def create_permanent_license():
     
     if not license_key:
         return jsonify({"success": False, "error": "License key required"}), 400
-    
-    if auth["role"] != "master":
-        if not deduct_credits(auth["username"], CREDIT_PRICING["permanent"]):
-            return jsonify({"success": False, "error": f"Insufficient credits. Need {CREDIT_PRICING['permanent']} credits"}), 400
     
     PERMANENT_LICENSES[license_key] = {
         "type": "permanent",
@@ -2115,7 +2080,6 @@ def user_check_license():
     days_left = None
     activated = license_data.get("activated", False)
     
-    # For trial licenses, if not activated yet, show as pending
     if license_type == "trial" and not activated:
         days_left = None
         is_expired = False
@@ -2175,7 +2139,7 @@ def user_submit_request():
     return jsonify({"success": True, "message": "Request submitted successfully"}), 200
 
 # ==================================================
-# 🔑 ACTIVATION ENDPOINTS (Updated with max_devices and activation-based expiry)
+# 🔑 ACTIVATION ENDPOINTS
 # ==================================================
 
 @app.route('/api/activate', methods=['POST'])
@@ -2188,7 +2152,6 @@ def activate():
     if key in CUSTOM_ACTIVATIONS:
         activation = CUSTOM_ACTIVATIONS[key]
         
-        # Check expiry if activated
         if activation.get("expires_at") and activation.get("activated", False):
             exp_time = datetime.fromisoformat(activation["expires_at"])
             if now > exp_time:
@@ -2197,7 +2160,6 @@ def activate():
         if "hwids" not in activation:
             activation["hwids"] = []
         
-        # Check max devices
         max_devices = activation.get("max_devices", 1)
         if hwid not in activation["hwids"] and len(activation["hwids"]) >= max_devices:
             return jsonify({"status": "blocked", "msg": f"Max devices reached ({max_devices})"}), 403
@@ -2205,7 +2167,6 @@ def activate():
         if hwid not in activation["hwids"]:
             activation["hwids"].append(hwid)
         
-        # Mark as activated
         if not activation.get("activated"):
             activation["activated"] = True
             activation["activated_at"] = now.isoformat()
@@ -2236,11 +2197,9 @@ def activate():
         if hwid not in lic["hwids"] and len(lic["hwids"]) >= max_devices:
             return jsonify({"status": "blocked", "msg": f"Max devices reached ({max_devices})"}), 403
         
-        # If not activated yet, start the countdown
         if not lic.get("activated"):
             lic["activated"] = True
             lic["activated_at"] = now.isoformat()
-            # Set expiry based on duration from activation time
             duration_hours = lic.get("duration_hours", 3)
             expires_at = now + timedelta(hours=duration_hours)
             lic["expires_at"] = expires_at.isoformat()
@@ -2249,7 +2208,6 @@ def activate():
             lic["hwids"].append(hwid)
         save_data()
         
-        # Check if expired
         if lic.get("expires_at"):
             exp_time = datetime.fromisoformat(lic["expires_at"])
             if now > exp_time:
