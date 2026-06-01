@@ -433,134 +433,573 @@ monitor_thread = threading.Thread(target=monitor_expired_licenses, daemon=True)
 monitor_thread.start()
 
 # ==================================================
-# 🎨 ADMIN PANEL HTML
+# 🎨 MODERN ADMIN PANEL HTML
 # ==================================================
 def get_admin_html():
     return f"""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>JEPFX ADMIN PANEL</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEPFX ADMIN PANEL • License Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }}
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }}
+        
         {get_theme_css()}
-        body {{ min-height: 100vh; padding: 20px; transition: all 0.3s ease; }}
-        .container {{ max-width: 1400px; margin: 0 auto; }}
-        .login-box {{ max-width: 400px; margin: 100px auto; padding: 30px; border-radius: 15px; text-align: center; }}
-        .login-box input {{ width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 8px; }}
-        .login-box button {{ padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }}
-        .panel {{ display: none; }}
-        .header {{ border-radius: 15px; padding: 20px; margin-bottom: 20px; }}
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }}
-        .stat-card {{ padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s; }}
-        .stat-number {{ font-size: 28px; font-weight: bold; color: var(--primary); }}
-        .tabs {{ display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 20px; }}
-        .tab {{ padding: 10px 18px; border-radius: 8px; cursor: pointer; border: none; font-size: 14px; transition: 0.3s; }}
-        .content {{ display: none; border-radius: 15px; padding: 25px; }}
-        .content.active {{ display: block; }}
-        input, select, textarea {{ width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; outline: none; }}
-        button {{ border: none; border-radius: 8px; cursor: pointer; margin: 5px; padding: 10px 20px; transition: 0.3s; font-weight: bold; }}
-        .btn-danger {{ background: var(--danger); }}
-        .btn-success {{ background: var(--secondary); }}
-        .btn-warning {{ background: var(--warning); }}
-        .result-box {{ padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 3px solid var(--primary); }}
-        .modal {{ display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }}
-        .modal-content {{ margin: 5% auto; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; position: relative; }}
-        .close {{ float: right; font-size: 28px; cursor: pointer; }}
-        .master-only {{ border-left: 3px solid var(--danger); padding: 10px; margin: 10px 0; border-radius: 5px; }}
-        .copy-btn {{ background: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 11px; margin-left: 5px; cursor: pointer; display: inline-block; }}
-        .badge {{ display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; }}
-        .pre-style {{ font-family: monospace; white-space: pre; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; }}
+        
+        body {{
+            min-height: 100vh;
+            transition: all 0.3s ease;
+            scroll-behavior: smooth;
+        }}
+        
+        .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+        
+        /* Modern Login Box */
+        .login-box {{
+            max-width: 420px;
+            margin: 80px auto;
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+        }}
+        
+        .login-box h2 {{
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }}
+        
+        .login-box input {{
+            width: 100%;
+            padding: 14px 16px;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            font-size: 15px;
+            transition: all 0.3s;
+        }}
+        
+        .login-box input:focus {{
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+        }}
+        
+        .login-box button {{
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }}
+        
+        .login-box button:hover {{
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }}
+        
+        /* Modern Panel */
+        .panel {{
+            display: none;
+        }}
+        
+        /* Header */
+        .header {{
+            border-radius: 24px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }}
+        
+        .header h1 {{
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }}
+        
+        .header h1 i {{
+            color: var(--primary);
+            margin-right: 12px;
+        }}
+        
+        .user-info {{
+            display: flex;
+            gap: 20px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }}
+        
+        .user-badge {{
+            background: rgba(124,58,237,0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }}
+        
+        .user-badge i {{
+            margin-right: 6px;
+        }}
+        
+        /* Stats Grid */
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }}
+        
+        .stat-card {{
+            padding: 20px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            background: var(--card-bg);
+        }}
+        
+        .stat-card i {{
+            font-size: 32px;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }}
+        
+        .stat-number {{
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+        }}
+        
+        .stat-label {{
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }}
+        
+        /* Tabs */
+        .tabs {{
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }}
+        
+        .tab {{
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            border: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: var(--card-bg);
+            color: var(--text);
+            backdrop-filter: blur(5px);
+        }}
+        
+        .tab i {{
+            margin-right: 8px;
+        }}
+        
+        .tab:hover {{
+            transform: translateY(-2px);
+            background: var(--primary);
+        }}
+        
+        .tab.active {{
+            background: var(--primary);
+            box-shadow: 0 4px 15px rgba(124,58,237,0.3);
+        }}
+        
+        /* Content */
+        .content {{
+            display: none;
+            border-radius: 24px;
+            padding: 28px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+        }}
+        
+        .content.active {{
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }}
+        
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        
+        .content h2 {{
+            font-size: 22px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }}
+        
+        .content h2 i {{
+            margin-right: 10px;
+            color: var(--primary);
+        }}
+        
+        /* Form Elements */
+        input, select, textarea {{
+            width: 100%;
+            padding: 14px 16px;
+            margin: 10px 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            font-size: 14px;
+            transition: all 0.3s;
+        }}
+        
+        input:focus, select:focus, textarea:focus {{
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+        }}
+        
+        button {{
+            background: var(--primary);
+            color: white;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin: 5px;
+        }}
+        
+        button:hover {{
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }}
+        
+        .btn-danger {{
+            background: var(--danger);
+        }}
+        
+        .btn-success {{
+            background: var(--secondary);
+        }}
+        
+        .btn-warning {{
+            background: var(--warning);
+        }}
+        
+        .btn-outline {{
+            background: transparent;
+            border: 1px solid var(--border);
+        }}
+        
+        .btn-outline:hover {{
+            background: var(--primary);
+            border-color: var(--primary);
+        }}
+        
+        /* Tables */
+        .table-wrapper {{
+            overflow-x: auto;
+            border-radius: 16px;
+        }}
+        
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }}
+        
+        th, td {{
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }}
+        
+        th {{
+            font-weight: 600;
+            color: var(--primary);
+        }}
+        
+        /* Result Box */
+        .result-box {{
+            padding: 20px;
+            border-radius: 16px;
+            margin-top: 20px;
+            border-left: 4px solid var(--primary);
+            background: rgba(0,0,0,0.2);
+        }}
+        
+        /* Modal */
+        .modal {{
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+        }}
+        
+        .modal-content {{
+            margin: 5% auto;
+            padding: 28px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 550px;
+            position: relative;
+            border: 1px solid var(--border);
+        }}
+        
+        .close {{
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            transition: 0.3s;
+        }}
+        
+        .close:hover {{
+            color: var(--danger);
+        }}
+        
+        /* Copy Button */
+        .copy-btn {{
+            background: var(--primary);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            margin-left: 8px;
+            cursor: pointer;
+            display: inline-block;
+        }}
+        
+        /* Badges */
+        .badge {{
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }}
+        
+        .badge-active {{ background: var(--secondary); }}
+        .badge-expired {{ background: var(--danger); }}
+        .badge-warning {{ background: var(--warning); color: #000; }}
+        .badge-pending {{ background: var(--warning); color: #000; }}
+        .badge-approved {{ background: var(--secondary); }}
+        .badge-rejected {{ background: var(--danger); }}
+        
+        /* Pre Style */
+        .pre-style {{
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            background: rgba(0,0,0,0.3);
+            padding: 16px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }}
+        
+        /* Master Only */
+        .master-only {{
+            border-left: 4px solid var(--danger);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 12px;
+            background: rgba(239,68,68,0.1);
+        }}
+        
+        /* Loading Spinner */
+        .spinner {{
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }}
+        
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+        
+        /* Responsive */
+        @media (max-width: 768px) {{
+            .container {{ padding: 12px; }}
+            .header {{ padding: 20px; }}
+            .tab {{ padding: 8px 16px; font-size: 12px; }}
+            .content {{ padding: 20px; }}
+            .stats-grid {{ grid-template-columns: repeat(2, 1fr); }}
+        }}
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {{
+            width: 8px;
+            height: 8px;
+        }}
+        
+        ::-webkit-scrollbar-track {{
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }}
+        
+        ::-webkit-scrollbar-thumb {{
+            background: var(--primary);
+            border-radius: 10px;
+        }}
     </style>
 </head>
 <body>
 <div class="container">
     <div id="loginScreen" class="login-box">
-        <h2>🔒 JEPFX ADMIN LOGIN</h2>
+        <i class="fas fa-shield-alt" style="font-size: 48px; color: var(--primary); margin-bottom: 20px;"></i>
+        <h2>JEPFX ADMIN</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">License Management System</p>
         <input type="text" id="loginUsername" placeholder="Username">
         <input type="password" id="loginPassword" placeholder="Password">
-        <button onclick="login()">LOGIN</button>
-        <p id="loginError" style="color: var(--danger); display: none; margin-top: 10px;">Invalid credentials!</p>
+        <button onclick="login()"><i class="fas fa-sign-in-alt"></i> LOGIN</button>
+        <p id="loginError" style="color: var(--danger); display: none; margin-top: 15px;"><i class="fas fa-exclamation-circle"></i> Invalid credentials!</p>
     </div>
     
     <div id="mainPanel" class="panel">
         <div class="header">
-            <h1>⚡ JEPFX ADMIN PANEL</h1>
-            <p>Welcome, <span id="currentUser">-</span> | Role: <span id="currentRole">-</span> | Credits: <span id="currentCredits">0</span></p>
+            <h1><i class="fas fa-bolt"></i> JEPFX ADMIN PANEL</h1>
+            <div class="user-info">
+                <span class="user-badge"><i class="fas fa-user"></i> <span id="currentUser">-</span></span>
+                <span class="user-badge"><i class="fas fa-tag"></i> <span id="currentRole">-</span></span>
+                <span class="user-badge"><i class="fas fa-coins"></i> Credits: <span id="currentCredits">0</span></span>
+            </div>
         </div>
         
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-number" id="statTrials">0</div><div>My Trials</div></div>
-            <div class="stat-card" id="statCustomCard"><div class="stat-number" id="statCustom">0</div><div>My Custom</div></div>
-            <div class="stat-card" id="statPermanentCard" style="display: none;"><div class="stat-number" id="statPermanent">0</div><div>My Permanent</div></div>
-            <div class="stat-card"><div class="stat-number" id="statHistory">0</div><div>History</div></div>
-            <div class="stat-card"><div class="stat-number" id="statRequests">0</div><div>Requests</div></div>
+            <div class="stat-card" onclick="switchTabTo('myLicenses')">
+                <i class="fas fa-flask"></i>
+                <div class="stat-number" id="statTrials">0</div>
+                <div class="stat-label">Trial Licenses</div>
+            </div>
+            <div class="stat-card" id="statCustomCard" onclick="switchTabTo('myLicenses')">
+                <i class="fas fa-star"></i>
+                <div class="stat-number" id="statCustom">0</div>
+                <div class="stat-label">Custom Licenses</div>
+            </div>
+            <div class="stat-card" id="statPermanentCard" style="display: none;" onclick="switchTabTo('myLicenses')">
+                <i class="fas fa-gem"></i>
+                <div class="stat-number" id="statPermanent">0</div>
+                <div class="stat-label">Permanent Licenses</div>
+            </div>
+            <div class="stat-card" onclick="switchTabTo('history')">
+                <i class="fas fa-history"></i>
+                <div class="stat-number" id="statHistory">0</div>
+                <div class="stat-label">History Entries</div>
+            </div>
+            <div class="stat-card" onclick="switchTabTo('userRequests')">
+                <i class="fas fa-envelope"></i>
+                <div class="stat-number" id="statRequests">0</div>
+                <div class="stat-label">Pending Requests</div>
+            </div>
         </div>
         
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('generateTrial')">🎲 TRIAL</button>
-            <button class="tab" id="customTab" onclick="switchTab('customActivation')">✨ CUSTOM</button>
-            <button class="tab" id="permanentTab" style="display: none;" onclick="switchTab('permanentLicense')">🔑 PERMANENT</button>
-            <button class="tab" onclick="switchTab('myLicenses')">📋 MY LICENSES</button>
-            <button class="tab" onclick="switchTab('userRequests')">📨 REQUESTS</button>
-            <button class="tab" onclick="switchTab('history')">📜 HISTORY</button>
-            <button class="tab" id="adminTab" style="display: none;" onclick="switchTab('admins')">👨‍💼 MANAGE</button>
-            <button class="tab" onclick="switchTab('changePassword')">🔐 PASSWORD</button>
-            <button class="tab" onclick="switchTab('monitor')">📈 MONITOR</button>
+            <button class="tab active" onclick="switchTab('generateTrial')"><i class="fas fa-dice-d6"></i> TRIAL</button>
+            <button class="tab" id="customTab" onclick="switchTab('customActivation')"><i class="fas fa-magic"></i> CUSTOM</button>
+            <button class="tab" id="permanentTab" style="display: none;" onclick="switchTab('permanentLicense')"><i class="fas fa-infinity"></i> PERMANENT</button>
+            <button class="tab" onclick="switchTab('myLicenses')"><i class="fas fa-list"></i> MY LICENSES</button>
+            <button class="tab" onclick="switchTab('userRequests')"><i class="fas fa-inbox"></i> REQUESTS</button>
+            <button class="tab" onclick="switchTab('history')"><i class="fas fa-scroll"></i> HISTORY</button>
+            <button class="tab" id="adminTab" style="display: none;" onclick="switchTab('admins')"><i class="fas fa-users-cog"></i> MANAGE</button>
+            <button class="tab" onclick="switchTab('changePassword')"><i class="fas fa-key"></i> PASSWORD</button>
+            <button class="tab" onclick="switchTab('monitor')"><i class="fas fa-chart-line"></i> MONITOR</button>
         </div>
         
         <div id="generateTrial" class="content active">
-            <h2>🎲 Generate Trial License</h2>
-            <select id="trialDuration">
-                <option value="3">3 Hours (2 credits)</option>
-                <option value="6">6 Hours (3 credits)</option>
-                <option value="12">12 Hours (4 credits)</option>
-                <option value="24">1 Day (5 credits)</option>
-                <option value="72">3 Days (10 credits)</option>
-                <option value="168">1 Week (20 credits)</option>
-                <option value="720">1 Month (50 credits)</option>
-            </select>
-            <input type="number" id="maxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="50">
-            <button onclick="generateTrial()">GENERATE LICENSE</button>
+            <h2><i class="fas fa-dice-d6"></i> Generate Trial License</h2>
+            <div style="display: grid; gap: 15px; max-width: 400px;">
+                <select id="trialDuration">
+                    <option value="3">3 Hours (2 credits)</option>
+                    <option value="6">6 Hours (3 credits)</option>
+                    <option value="12">12 Hours (4 credits)</option>
+                    <option value="24">1 Day (5 credits)</option>
+                    <option value="72">3 Days (10 credits)</option>
+                    <option value="168">1 Week (20 credits)</option>
+                    <option value="720">1 Month (50 credits)</option>
+                </select>
+                <input type="number" id="maxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="50">
+                <button onclick="generateTrial()"><i class="fas fa-plus-circle"></i> GENERATE LICENSE</button>
+            </div>
             <div id="trialResult" class="result-box" style="display: none;"></div>
         </div>
         
         <div id="customActivation" class="content">
-            <h2>✨ Custom Activation (Multi-PC)</h2>
-            <input type="text" id="customUsername" placeholder="Username *">
-            <input type="text" id="customPassword" placeholder="Password *">
-            <input type="text" id="customLicense" placeholder="License Key *">
-            <select id="customDurationType">
-                <option value="hours">Hours (2 credits/hour)</option>
-                <option value="days">Days (5 credit/day)</option>
-                <option value="weeks">Weeks (8 credits/week)</option>
-                <option value="months">Months (50 credits/month)</option>
-                <option value="years">Years (800 credits/year)</option>
-                <option value="unlimited">Unlimited (1500 credits)</option>
-            </select>
-            <input type="number" id="customDurationValue" placeholder="Duration value" step="0.5">
-            <input type="number" id="customMaxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="100">
-            <button onclick="createCustomActivation()">CREATE ACTIVATION</button>
+            <h2><i class="fas fa-magic"></i> Custom Activation (Multi-PC)</h2>
+            <div style="display: grid; gap: 15px; max-width: 500px;">
+                <input type="text" id="customUsername" placeholder="Username *">
+                <input type="text" id="customPassword" placeholder="Password *">
+                <input type="text" id="customLicense" placeholder="License Key *">
+                <select id="customDurationType">
+                    <option value="hours">Hours (2 credits/hour)</option>
+                    <option value="days">Days (5 credit/day)</option>
+                    <option value="weeks">Weeks (8 credits/week)</option>
+                    <option value="months">Months (50 credits/month)</option>
+                    <option value="years">Years (800 credits/year)</option>
+                    <option value="unlimited">Unlimited (1500 credits)</option>
+                </select>
+                <input type="number" id="customDurationValue" placeholder="Duration value" step="0.5">
+                <input type="number" id="customMaxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="100">
+                <button onclick="createCustomActivation()"><i class="fas fa-save"></i> CREATE ACTIVATION</button>
+            </div>
             <div id="customResult" class="result-box" style="display: none;"></div>
         </div>
         
         <div id="permanentLicense" class="content">
-            <h2>🔑 Permanent License (50 Credits)</h2>
-            <input type="text" id="permLicenseKey" placeholder="License Key *">
-            <input type="text" id="permUsername" placeholder="Username (optional)">
-            <input type="text" id="permPassword" placeholder="Password (optional)">
-            <input type="number" id="permMaxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="100">
-            <button onclick="createPermanentLicense()">CREATE PERMANENT</button>
+            <h2><i class="fas fa-infinity"></i> Permanent License (50 Credits)</h2>
+            <div style="display: grid; gap: 15px; max-width: 500px;">
+                <input type="text" id="permLicenseKey" placeholder="License Key *">
+                <input type="text" id="permUsername" placeholder="Username (optional)">
+                <input type="text" id="permPassword" placeholder="Password (optional)">
+                <input type="number" id="permMaxDevices" placeholder="Max devices (default: 1)" value="1" min="1" max="100">
+                <button onclick="createPermanentLicense()"><i class="fas fa-crown"></i> CREATE PERMANENT</button>
+            </div>
             <div id="permResult" class="result-box" style="display: none;"></div>
         </div>
         
         <div id="myLicenses" class="content">
-            <h2>📋 My Active Licenses</h2>
-            <div style="margin-bottom: 10px;">
-                <button onclick="showLicenseType('trials')">Trial</button>
-                <button id="showCustomBtn" onclick="showLicenseType('custom')">Custom</button>
-                <button id="showPermanentBtn" style="display: none;" onclick="showLicenseType('permanent')">Permanent</button>
+            <h2><i class="fas fa-list"></i> My Active Licenses</h2>
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-outline" onclick="showLicenseType('trials')"><i class="fas fa-flask"></i> Trial</button>
+                <button class="btn-outline" id="showCustomBtn" onclick="showLicenseType('custom')"><i class="fas fa-star"></i> Custom</button>
+                <button class="btn-outline" id="showPermanentBtn" style="display: none;" onclick="showLicenseType('permanent')"><i class="fas fa-gem"></i> Permanent</button>
             </div>
             <div id="myTrialsList"></div>
             <div id="myCustomList" style="display: none;"></div>
@@ -568,67 +1007,93 @@ def get_admin_html():
         </div>
         
         <div id="userRequests" class="content">
-            <h2>📨 User Requests</h2>
-            <button onclick="loadUserRequests()">REFRESH</button>
-            <div id="requestsList"></div>
+            <h2><i class="fas fa-inbox"></i> User Requests</h2>
+            <button onclick="loadUserRequests()"><i class="fas fa-sync-alt"></i> REFRESH</button>
+            <div class="table-wrapper"><div id="requestsList"></div></div>
         </div>
         
         <div id="history" class="content">
-            <h2>📜 License History</h2>
-            <input type="text" id="historySearch" placeholder="Search..." onkeyup="filterHistory()" style="width: 100%;">
-            <button onclick="loadHistory()">REFRESH</button>
-            <button onclick="exportHistory()">📥 EXPORT CSV</button>
-            <div id="historyList"></div>
+            <h2><i class="fas fa-scroll"></i> License History</h2>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                <input type="text" id="historySearch" placeholder="Search..." onkeyup="filterHistory()" style="width: 300px;">
+                <button onclick="loadHistory()"><i class="fas fa-sync-alt"></i> REFRESH</button>
+                <button onclick="exportHistory()"><i class="fas fa-download"></i> EXPORT CSV</button>
+            </div>
+            <div class="table-wrapper"><div id="historyList"></div></div>
         </div>
         
         <div id="admins" class="content">
-            <div class="master-only"><h2>👑 MASTER CONTROL</h2></div>
-            <h3>➕ Add User</h3>
-            <input type="text" id="newAdminUser" placeholder="Username">
-            <input type="password" id="newAdminPass" placeholder="Password">
-            <select id="newAdminRole">
-                <option value="admin">Admin (Trial + Custom)</option>
-                <option value="moderator">Moderator (Trial only)</option>
-            </select>
-            <input type="number" id="newAdminCredits" placeholder="Initial Credits" value="100" step="0.5">
-            <button onclick="addAdmin()">ADD USER</button>
-            
-            <h3>🔄 Change Role</h3>
-            <input type="text" id="roleChangeUser" placeholder="Username">
-            <select id="newRoleSelect">
-                <option value="admin">Admin (Trial + Custom)</option>
-                <option value="moderator">Moderator (Trial only)</option>
-            </select>
-            <button onclick="changeUserRole()">CHANGE ROLE</button>
-            
-            <h3>🔑 Change Password</h3>
-            <input type="text" id="targetUsername" placeholder="Username">
-            <input type="password" id="newPasswordForTarget" placeholder="New Password">
-            <button class="btn-warning" onclick="changeOtherPassword()">CHANGE PASSWORD</button>
-            
-            <h3>💰 Credits</h3>
-            <input type="text" id="creditUsername" placeholder="Username">
-            <input type="number" id="creditAmount" placeholder="Amount" step="0.5">
-            <button onclick="manageCredits()">UPDATE CREDITS</button>
-            
-            <h3>📋 Admins</h3>
-            <div id="adminsList"></div>
-            <h3>📋 Moderators</h3>
-            <div id="moderatorsList"></div>
+            <div class="master-only">
+                <h2><i class="fas fa-crown"></i> MASTER CONTROL</h2>
+            </div>
+            <div style="display: grid; gap: 25px;">
+                <div>
+                    <h3><i class="fas fa-user-plus"></i> Add User</h3>
+                    <div style="display: grid; gap: 10px; max-width: 400px;">
+                        <input type="text" id="newAdminUser" placeholder="Username">
+                        <input type="password" id="newAdminPass" placeholder="Password">
+                        <select id="newAdminRole">
+                            <option value="admin">Admin (Trial + Custom)</option>
+                            <option value="moderator">Moderator (Trial only)</option>
+                        </select>
+                        <input type="number" id="newAdminCredits" placeholder="Initial Credits" value="100" step="0.5">
+                        <button onclick="addAdmin()"><i class="fas fa-plus"></i> ADD USER</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3><i class="fas fa-exchange-alt"></i> Change Role</h3>
+                    <div style="display: grid; gap: 10px; max-width: 400px;">
+                        <input type="text" id="roleChangeUser" placeholder="Username">
+                        <select id="newRoleSelect">
+                            <option value="admin">Admin (Trial + Custom)</option>
+                            <option value="moderator">Moderator (Trial only)</option>
+                        </select>
+                        <button class="btn-warning" onclick="changeUserRole()"><i class="fas fa-sync"></i> CHANGE ROLE</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3><i class="fas fa-key"></i> Change Password (Other User)</h3>
+                    <div style="display: grid; gap: 10px; max-width: 400px;">
+                        <input type="text" id="targetUsername" placeholder="Username">
+                        <input type="password" id="newPasswordForTarget" placeholder="New Password">
+                        <button onclick="changeOtherPassword()"><i class="fas fa-lock"></i> CHANGE PASSWORD</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3><i class="fas fa-coins"></i> Manage Credits</h3>
+                    <div style="display: grid; gap: 10px; max-width: 400px;">
+                        <input type="text" id="creditUsername" placeholder="Username">
+                        <input type="number" id="creditAmount" placeholder="Amount (+/-)" step="0.5">
+                        <button onclick="manageCredits()"><i class="fas fa-wallet"></i> UPDATE CREDITS</button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3><i class="fas fa-users"></i> Admins</h3>
+                    <div class="table-wrapper"><div id="adminsList"></div></div>
+                    <h3 style="margin-top: 20px;"><i class="fas fa-user-shield"></i> Moderators</h3>
+                    <div class="table-wrapper"><div id="moderatorsList"></div></div>
+                </div>
+            </div>
         </div>
         
         <div id="changePassword" class="content">
-            <h2>🔐 Change Your Password</h2>
-            <input type="password" id="oldPassword" placeholder="Current Password">
-            <input type="password" id="newPassword" placeholder="New Password">
-            <input type="password" id="confirmPassword" placeholder="Confirm Password">
-            <button onclick="changePassword()">UPDATE</button>
+            <h2><i class="fas fa-key"></i> Change Your Password</h2>
+            <div style="display: grid; gap: 15px; max-width: 400px;">
+                <input type="password" id="oldPassword" placeholder="Current Password">
+                <input type="password" id="newPassword" placeholder="New Password">
+                <input type="password" id="confirmPassword" placeholder="Confirm Password">
+                <button onclick="changePassword()"><i class="fas fa-save"></i> UPDATE PASSWORD</button>
+            </div>
             <div id="passwordResult" class="result-box" style="display: none;"></div>
         </div>
         
         <div id="monitor" class="content">
-            <h2>📈 Monitor</h2>
-            <button onclick="loadMonitor()">REFRESH</button>
+            <h2><i class="fas fa-chart-line"></i> System Monitor</h2>
+            <button onclick="loadMonitor()"><i class="fas fa-sync-alt"></i> REFRESH</button>
             <div id="monitorData" class="result-box"></div>
         </div>
     </div>
@@ -637,11 +1102,11 @@ def get_admin_html():
 <div id="credsModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
-        <h2 id="modalTitle">🔑 License Credentials</h2>
+        <h2 id="modalTitle"><i class="fas fa-key"></i> License Credentials</h2>
         <div id="modalBody"></div>
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn-success" onclick="copyStyledCredentials()">📋 COPY STYLIZED</button>
-            <button onclick="closeModal()">Close</button>
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn-success" onclick="copyStyledCredentials()"><i class="fas fa-copy"></i> COPY STYLIZED</button>
+            <button onclick="closeModal()"><i class="fas fa-times"></i> Close</button>
         </div>
     </div>
 </div>
@@ -652,6 +1117,18 @@ def get_admin_html():
     const API_URL = window.location.origin;
     let currentUser = null, currentRole = null;
     let lastGeneratedData = null;
+    
+    function switchTabTo(tabId) {{
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`.tab[onclick*="{tabId}"]`)?.classList.add('active');
+        if(tabId === 'myLicenses') loadMyLicenses();
+        if(tabId === 'userRequests') loadUserRequests();
+        if(tabId === 'history') loadHistory();
+        if(tabId === 'admins' && currentRole === 'master') loadAdmins();
+        if(tabId === 'monitor') loadMonitor();
+    }}
     
     async function login() {{
         const username = document.getElementById('loginUsername').value;
@@ -668,8 +1145,8 @@ def get_admin_html():
             document.getElementById('currentCredits').textContent = data.credits || 'Unlimited';
             
             if(data.role === 'master') {{
-                document.getElementById('adminTab').style.display = 'block';
-                document.getElementById('permanentTab').style.display = 'block';
+                document.getElementById('adminTab').style.display = 'inline-block';
+                document.getElementById('permanentTab').style.display = 'inline-block';
                 document.getElementById('showPermanentBtn').style.display = 'inline-block';
                 document.getElementById('statPermanentCard').style.display = 'block';
             }} else if(data.role === 'admin') {{
@@ -750,11 +1227,11 @@ def get_admin_html():
         lastGeneratedData = {{licenseKey, username, password, durationText, maxDevices, licenseType}};
         const styledText = getStyledCredentials(licenseKey, username, password, durationText, maxDevices, licenseType);
         const modal = document.getElementById('credsModal');
-        document.getElementById('modalTitle').innerHTML = '🔑 LICENSE GENERATED';
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-key"></i> LICENSE GENERATED';
         document.getElementById('modalBody').innerHTML = `
             <div class="pre-style">${{styledText.replace(/\\n/g, '<br>')}}</div>
-            <div style="margin-top: 15px; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 8px;">
-                <p style="font-size: 13px;">✅ License saved in history<br>✅ You can find it in "MY LICENSES" tab</p>
+            <div style="margin-top: 15px; padding: 10px; background: rgba(16,185,129,0.1); border-radius: 12px;">
+                <p style="font-size: 13px;"><i class="fas fa-check-circle"></i> License saved in history<br><i class="fas fa-folder-open"></i> You can find it in "MY LICENSES" tab</p>
             </div>
         `;
         modal.style.display = 'block';
@@ -774,7 +1251,7 @@ def get_admin_html():
         alert('✓ Credentials copied to clipboard!');
     }}
     
-    function copyToClipboard(text) {{ navigator.clipboard.writeText(text); alert('Copied!'); }}
+    function copyToClipboard(text) {{ navigator.clipboard.writeText(text); alert('✓ Copied!'); }}
     
     async function generateTrial() {{
         const duration = document.getElementById('trialDuration').value;
@@ -794,9 +1271,9 @@ def get_admin_html():
         if(data.success) {{
             const durationText = formatDurationHours(parseInt(duration));
             showCredentialsModal(data.license_key, data.username, data.password, durationText, maxDevices, 'TRIAL');
-            resultDiv.innerHTML = `✅ TRIAL LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
+            resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> TRIAL LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
             loadStats(); loadMyLicenses(); loadHistory();
-        }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
+        }} else {{ resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${{data.error}}`; }}
     }}
     
     async function createCustomActivation() {{
@@ -828,13 +1305,13 @@ def get_admin_html():
             if(durationType === 'unlimited') durationText = 'UNLIMITED';
             else durationText = durationValue + ' ' + durationType.toUpperCase();
             showCredentialsModal(license, username, password, durationText, maxDevices, 'CUSTOM');
-            resultDiv.innerHTML = `✅ CUSTOM LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
+            resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> CUSTOM LICENSE CREATED!<br>💰 Used: ${{data.credits_used}} credits<br>💳 Remaining: ${{data.remaining_credits}}`;
             document.getElementById('customUsername').value = '';
             document.getElementById('customPassword').value = '';
             document.getElementById('customLicense').value = '';
             document.getElementById('customDurationValue').value = '';
             loadStats(); loadMyLicenses(); loadHistory();
-        }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
+        }} else {{ resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${{data.error}}`; }}
     }}
     
     async function createPermanentLicense() {{
@@ -859,12 +1336,12 @@ def get_admin_html():
         resultDiv.style.display = 'block';
         if(data.success) {{
             showCredentialsModal(license, username || 'N/A', password || 'N/A', 'PERMANENT (NEVER EXPIRES)', maxDevices, 'PERMANENT');
-            resultDiv.innerHTML = `✅ PERMANENT LICENSE CREATED!<br>💰 Remaining: ${{data.remaining_credits}}`;
+            resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> PERMANENT LICENSE CREATED!<br>💰 Remaining: ${{data.remaining_credits}}`;
             document.getElementById('permLicenseKey').value = '';
             document.getElementById('permUsername').value = '';
             document.getElementById('permPassword').value = '';
             loadStats(); loadMyLicenses(); loadHistory();
-        }} else {{ resultDiv.innerHTML = `❌ ${{data.error}}`; }}
+        }} else {{ resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${{data.error}}`; }}
     }}
     
     async function loadMyLicenses() {{
@@ -879,19 +1356,19 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<table><th>License</th><th>Max Devices</th><th>Used</th><th>Activated</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
+        let html = '<div class="table-wrapper"><table><thead><tr><th>License</th><th>Max Devices</th><th>Used</th><th>Activated</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         data.trials.forEach(t => {{
             html += `<tr>
-                <td>${{t.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{t.license_key}}')">Copy</button></td>
+                <td>${{t.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{t.license_key}}')"><i class="fas fa-copy"></i></button></td>
                 <td>${{t.max_devices || 1}}</td>
                 <td>${{t.hwid_count || 0}}</td>
-                <td>${{t.activated ? '✅ Yes' : '⏳ No'}}</td>
+                <td>${{t.activated ? '<i class="fas fa-check-circle" style="color:var(--secondary)"></i>' : '<i class="fas fa-clock" style="color:var(--warning)"></i>'}} ${{t.activated ? 'Yes' : 'No'}}</td>
                 <td>${{t.expires_at || '-'}}</td>
-                <td>${{t.status}}</td>
-                <td><button class="btn-danger" onclick="deleteTrial('${{t.license_key}}')">Delete</button></td>
+                <td><span class="badge badge-${{t.status === 'ACTIVE' ? 'active' : (t.status === 'EXPIRED' ? 'expired' : 'warning')}}">${{t.status}}</span></td>
+                <td><button class="btn-danger" onclick="deleteTrial('${{t.license_key}}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         }});
-        html += '</table>';
+        html += '</tbody></table></div>';
         document.getElementById('myTrialsList').innerHTML = html;
     }}
     
@@ -901,20 +1378,20 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<table><th>License</th><th>Username</th><th>Password</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr>';
+        let html = '<div class="table-wrapper"><table><thead><tr><th>License</th><th>Username</th><th>Password</th><th>Max Devices</th><th>Used</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         data.activations.forEach(a => {{
             html += `<tr>
-                <td>${{a.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{a.license_key}}')">Copy</button></td>
-                <td>${{a.username}} <button class="copy-btn" onclick="copyToClipboard('${{a.username}}')">Copy</button></td>
-                <td>${{a.password}} <button class="copy-btn" onclick="copyToClipboard('${{a.password}}')">Copy</button></td>
+                <td>${{a.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{a.license_key}}')"><i class="fas fa-copy"></i></button></td>
+                <td>${{a.username}} <button class="copy-btn" onclick="copyToClipboard('${{a.username}}')"><i class="fas fa-copy"></i></button></td>
+                <td>${{a.password}} <button class="copy-btn" onclick="copyToClipboard('${{a.password}}')"><i class="fas fa-copy"></i></button></td>
                 <td>${{a.max_devices || 1}}</td>
                 <td>${{a.hwids ? a.hwids.length : 0}}</td>
                 <td>${{a.expires_at || 'NEVER'}}</td>
-                <td class="${{a.status === 'ACTIVE' ? 'success' : 'warning'}}">${{a.status}}</td>
-                <td><button class="btn-danger" onclick="deleteCustomActivation('${{a.license_key}}')">Delete</button></td>
+                <td><span class="badge badge-${{a.status === 'ACTIVE' ? 'active' : 'expired'}}">${{a.status}}</span></td>
+                <td><button class="btn-danger" onclick="deleteCustomActivation('${{a.license_key}}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         }});
-        html += '</table>';
+        html += '</tbody></table></div>';
         document.getElementById('myCustomList').innerHTML = html;
     }}
     
@@ -924,18 +1401,18 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<table><th>License</th><th>Username</th><th>Max Devices</th><th>Used</th><th>Status</th><th>Action</th></tr>';
+        let html = '<div class="table-wrapper"><table><thead><tr><th>License</th><th>Username</th><th>Max Devices</th><th>Used</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         data.licenses.forEach(l => {{
             html += `<tr>
-                <td>${{l.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{l.license_key}}')">Copy</button></td>
+                <td>${{l.license_key}} <button class="copy-btn" onclick="copyToClipboard('${{l.license_key}}')"><i class="fas fa-copy"></i></button></td>
                 <td>${{l.username || '-'}}</td>
                 <td>${{l.max_devices || 1}}</td>
                 <td>${{l.hwids ? l.hwids.length : 0}}</td>
-                <td>${{l.status}}</td>
-                <td><button class="btn-danger" onclick="deletePermanentLicense('${{l.license_key}}')">Delete</button></td>
+                <td><span class="badge badge-active">ACTIVE</span></td>
+                <td><button class="btn-danger" onclick="deletePermanentLicense('${{l.license_key}}')"><i class="fas fa-trash"></i></button></td>
             </tr>`;
         }});
-        html += '</table>';
+        html += '</tbody></table></div>';
         document.getElementById('myPermanentList').innerHTML = html;
     }}
     
@@ -945,7 +1422,7 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr>';
+        let html = '<table><thead><tr><th>Date</th><th>License</th><th>User</th><th>Type</th><th>Message</th><th>Contact</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         data.requests.forEach((req, idx) => {{
             html += `<tr>
                 <td>${{new Date(req.created_at).toLocaleString()}}</td>
@@ -955,11 +1432,11 @@ def get_admin_html():
                 <td>${{req.message.substring(0, 50)}}...</td>
                 <td>${{req.contact || '-'}}</td>
                 <td><span class="badge badge-${{req.status}}">${{req.status}}</span></td>
-                <td>${{req.status === 'pending' ? `<button class="btn-success" onclick="approveRequest(${{idx}}, '${{req.license_key}}', '${{req.request_type}}', ${{req.days_requested || 7}})">Approve</button>
-                    <button class="btn-danger" onclick="rejectRequest(${{idx}})">Reject</button>` : '-'}}</td>
+                <td>${{req.status === 'pending' ? `<button class="btn-success" onclick="approveRequest(${{idx}}, '${{req.license_key}}', '${{req.request_type}}', ${{req.days_requested || 7}})"><i class="fas fa-check"></i></button>
+                    <button class="btn-danger" onclick="rejectRequest(${{idx}})"><i class="fas fa-times"></i></button>` : '-'}}</td>
             </tr>`;
         }});
-        html += '</table>';
+        html += '</tbody></table>';
         document.getElementById('requestsList').innerHTML = html;
     }}
     
@@ -991,20 +1468,20 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let html = '能懈<table><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr>';
+        let html = '<table><thead><tr><th>Created</th><th>License</th><th>Username</th><th>Password</th><th>Type</th><th>Owner</th><th>Expires</th><th>Action</th></tr></thead><tbody>';
         data.history.forEach(h => {{
             html += `<tr>
                 <td>${{new Date(h.created_at).toLocaleString()}}</td>
-                <td><strong>${{h.license_key}}</strong> <button class="copy-btn" onclick="copyToClipboard('${{h.license_key}}')">Copy</button></td>
-                <td>${{h.username}} <button class="copy-btn" onclick="copyToClipboard('${{h.username}}')">Copy</button></td>
-                <td>${{h.password}} <button class="copy-btn" onclick="copyToClipboard('${{h.password}}')">Copy</button></td>
+                <td><strong>${{h.license_key}}</strong> <button class="copy-btn" onclick="copyToClipboard('${{h.license_key}}')"><i class="fas fa-copy"></i></button></td>
+                <td>${{h.username}} <button class="copy-btn" onclick="copyToClipboard('${{h.username}}')"><i class="fas fa-copy"></i></button></td>
+                <td>${{h.password}} <button class="copy-btn" onclick="copyToClipboard('${{h.password}}')"><i class="fas fa-copy"></i></button></td>
                 <td>${{h.type}}</td>
                 <td>${{h.owner}}</td>
                 <td>${{h.expires_at || 'NEVER'}}</td>
-                <td><button onclick="showHistoryCredentials('${{h.license_key}}', '${{h.username}}', '${{h.password}}', '${{h.type}}', '${{h.expires_at}}')">View</button></td>
+                <td><button onclick="showHistoryCredentials('${{h.license_key}}', '${{h.username}}', '${{h.password}}', '${{h.type}}', '${{h.expires_at}}')"><i class="fas fa-eye"></i></button></td>
             </tr>`;
         }});
-        html += '</table>';
+        html += '</tbody></table>';
         document.getElementById('historyList').innerHTML = html;
     }}
     
@@ -1018,7 +1495,7 @@ def get_admin_html():
 ⏰ EXPIRES: ${{expires || 'NEVER'}}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
         const modal = document.getElementById('credsModal');
-        document.getElementById('modalTitle').innerHTML = '📜 History Credentials';
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-scroll"></i> History Credentials';
         document.getElementById('modalBody').innerHTML = `<div class="pre-style">${{styledText.replace(/\\n/g, '<br>')}}</div>`;
         modal.style.display = 'block';
     }}
@@ -1039,13 +1516,13 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        let adminsHtml = '能懈</table><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
-        data.admins.forEach(a => {{ adminsHtml += `<tr><td>${{a.username}}</td><td>${{a.credits}}</td><td>${{a.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteAdmin('${{a.username}}')">Delete</button></td></tr>`; }});
+        let adminsHtml = '能懈</td><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
+        data.admins.forEach(a => {{ adminsHtml += `<tr><td>${{a.username}}</td><td>${{a.credits}}</td><td>${{a.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteAdmin('${{a.username}}')"><i class="fas fa-trash"></i></button></td>`; }});
         adminsHtml += '</table>';
         document.getElementById('adminsList').innerHTML = adminsHtml;
         
-        let modsHtml = '能懈<table><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
-        data.moderators.forEach(m => {{ modsHtml += `<tr><td>${{m.username}}</td><td>${{m.credits}}</td><td>${{m.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteModerator('${{m.username}}')">Delete</button></td></tr>`; }});
+        let modsHtml = '能懈<tr><th>Username</th><th>Credits</th><th>Created</th><th>Action</th></tr>';
+        data.moderators.forEach(m => {{ modsHtml += `<tr><td>${{m.username}}</td><td>${{m.credits}}</td><td>${{m.created_at || '-'}}</td><td><button class="btn-danger" onclick="deleteModerator('${{m.username}}')"><i class="fas fa-trash"></i></button></td>`; }});
         modsHtml += '</table>';
         document.getElementById('moderatorsList').innerHTML = modsHtml;
     }}
@@ -1112,8 +1589,8 @@ def get_admin_html():
         const data = await res.json();
         const resultDiv = document.getElementById('passwordResult');
         resultDiv.style.display = 'block';
-        if(data.success) {{ resultDiv.innerHTML = '✅ Password changed! Please login again.'; setTimeout(() => location.reload(), 2000); }}
-        else {{ resultDiv.innerHTML = '❌ ' + data.error; }}
+        if(data.success) {{ resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> Password changed! Please login again.'; setTimeout(() => location.reload(), 2000); }}
+        else {{ resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + data.error; }}
     }}
     
     async function loadMonitor() {{
@@ -1122,7 +1599,17 @@ def get_admin_html():
             body: JSON.stringify({{admin_username: currentUser, admin_password: document.getElementById('loginPassword').value}})
         }});
         const data = await res.json();
-        document.getElementById('monitorData').innerHTML = `📊 STATUS<br><br>🔹 Trials: ${{data.my_trials}}<br>🔹 Custom: ${{data.my_custom}}<br>🔹 Permanent: ${{data.my_permanent}}<br>🔹 History: ${{data.history_count}}<br>🔹 Pending: ${{data.pending_requests}}<br>🔹 Active Users: ${{data.active_users}}<br><br>⏰ ${{data.server_time}}`;
+        document.getElementById('monitorData').innerHTML = `
+            <i class="fas fa-chart-pie"></i> <strong>SYSTEM STATUS</strong><br><br>
+            <i class="fas fa-flask"></i> Trials: ${{data.my_trials}}<br>
+            <i class="fas fa-star"></i> Custom: ${{data.my_custom}}<br>
+            <i class="fas fa-gem"></i> Permanent: ${{data.my_permanent}}<br>
+            <i class="fas fa-history"></i> History: ${{data.history_count}}<br>
+            <i class="fas fa-envelope"></i> Pending: ${{data.pending_requests}}<br>
+            <i class="fas fa-users"></i> Active Users: ${{data.active_users}}<br>
+            <hr style="margin: 10px 0; border-color: var(--border);">
+            <i class="fas fa-clock"></i> Server Time: ${{data.server_time}}
+        `;
     }}
     
     async function deleteTrial(key) {{ if(confirm('Delete?')) {{ await fetch(API_URL + '/api/admin/delete-trial', {{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{admin_username:currentUser,admin_password:document.getElementById('loginPassword').value,license_key:key}})}}); loadMyTrials(); loadStats(); }} }}
@@ -1140,88 +1627,315 @@ def get_admin_html():
     return ADMIN_HTML
 
 # ==================================================
-# 🎨 USER PORTAL HTML
+# 🎨 MODERN USER PORTAL HTML
 # ==================================================
 def get_user_portal_html():
     return f"""
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>JEPFX License Portal</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEPFX • License Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }}
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }}
+        
         {get_theme_css()}
-        body {{ min-height: 100vh; padding: 20px; transition: all 0.3s ease; }}
-        .container {{ max-width: 800px; margin: 0 auto; }}
-        .header {{ text-align: center; margin-bottom: 30px; }}
-        .header h1 {{ color: var(--primary); font-size: 32px; }}
-        .header p {{ color: var(--text-secondary); }}
-        .card {{ background: var(--card-bg); backdrop-filter: blur(10px); border-radius: 15px; padding: 25px; margin-bottom: 20px; transition: all 0.3s; }}
-        .card h2 {{ color: var(--primary); margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }}
-        input, select, textarea {{ width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; outline: none; }}
-        button {{ background: var(--primary); color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }}
-        button:hover {{ transform: translateY(-2px); filter: brightness(1.1); }}
-        .status-box {{ border-radius: 10px; padding: 15px; margin: 15px 0; border-left: 3px solid var(--primary); }}
+        
+        body {{
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }}
+        
+        .container {{
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+        
+        .header {{
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }}
+        
+        .header h1 {{
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }}
+        
+        .header p {{
+            color: var(--text-secondary);
+            font-size: 16px;
+        }}
+        
+        .card {{
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }}
+        
+        .card:hover {{
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }}
+        
+        .card h2 {{
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }}
+        
+        .card h2 i {{
+            color: var(--primary);
+            margin-right: 12px;
+        }}
+        
+        input, select, textarea {{
+            width: 100%;
+            padding: 14px 16px;
+            margin: 10px 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            font-size: 15px;
+            transition: all 0.3s;
+        }}
+        
+        input:focus, select:focus, textarea:focus {{
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+        }}
+        
+        button {{
+            background: var(--primary);
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
+        }}
+        
+        button:hover {{
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }}
+        
+        button:disabled {{
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }}
+        
+        .status-box {{
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary);
+            background: rgba(0,0,0,0.2);
+        }}
+        
         .status-active {{ border-left-color: var(--secondary); }}
         .status-expired {{ border-left-color: var(--danger); }}
         .status-warning {{ border-left-color: var(--warning); }}
-        .info-row {{ display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }}
-        .info-label {{ color: var(--text-secondary); }}
-        .info-value {{ color: var(--text); font-weight: bold; }}
-        .contact-buttons {{ display: flex; gap: 10px; margin-top: 20px; }}
-        .contact-btn {{ flex: 1; text-align: center; text-decoration: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; transition: 0.3s; }}
-        .telegram-btn {{ background: #0088cc; }}
-        .telegram-btn:hover {{ background: #006699; transform: translateY(-2px); }}
-        .request-form {{ display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }}
-        .request-form.show {{ display: block; }}
-        .alert-success {{ background: rgba(16,185,129,0.2); border: 1px solid var(--secondary); color: var(--secondary); padding: 12px; border-radius: 8px; margin: 10px 0; }}
-        .alert-error {{ background: rgba(239,68,68,0.2); border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 8px; margin: 10px 0; }}
-        .alert-info {{ background: rgba(59,130,246,0.2); border: 1px solid var(--primary); color: var(--primary); padding: 12px; border-radius: 8px; margin: 10px 0; }}
-        .badge {{ display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }}
+        
+        .info-row {{
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }}
+        
+        .info-label {{
+            color: var(--text-secondary);
+            font-weight: 500;
+        }}
+        
+        .info-value {{
+            color: var(--text);
+            font-weight: 600;
+        }}
+        
+        .contact-buttons {{
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }}
+        
+        .contact-btn {{
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            padding: 14px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }}
+        
+        .telegram-btn {{
+            background: linear-gradient(135deg, #0088cc, #006699);
+        }}
+        
+        .telegram-btn:hover {{
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }}
+        
+        .request-form {{
+            display: none;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }}
+        
+        .request-form.show {{
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }}
+        
+        .alert-success {{
+            background: rgba(16,185,129,0.15);
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            padding: 14px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }}
+        
+        .alert-error {{
+            background: rgba(239,68,68,0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 14px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }}
+        
+        .alert-info {{
+            background: rgba(59,130,246,0.15);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 14px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }}
+        
+        .badge {{
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }}
+        
         .badge-active {{ background: var(--secondary); color: white; }}
         .badge-expired {{ background: var(--danger); color: white; }}
-        .badge-warning {{ background: var(--warning); color: white; }}
+        .badge-warning {{ background: var(--warning); color: #000; }}
+        
         .hidden {{ display: none; }}
-        .loading {{ text-align: center; padding: 20px; }}
-        .spinner {{ border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }}
-        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+        
+        .loading {{
+            text-align: center;
+            padding: 40px;
+        }}
+        
+        .spinner {{
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }}
+        
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+        
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        
+        code {{
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+        }}
+        
+        .footer {{
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>🔑 JEPFX License Portal</h1>
-        <p>Check your license status, request extensions, and get support</p>
+        <h1><i class="fas fa-key"></i> JEPFX Portal</h1>
+        <p>License Management & Support System</p>
     </div>
     
     <div id="loginSection" class="card">
-        <h2>🔐 License Login</h2>
-        <p>Enter your username and password to check your license status</p>
+        <h2><i class="fas fa-lock"></i> License Login</h2>
+        <p style="margin-bottom: 20px; color: var(--text-secondary);">Enter your credentials to check license status</p>
         <input type="text" id="loginUsername" placeholder="Username">
         <input type="password" id="loginPassword" placeholder="Password">
-        <button onclick="checkLicense()">CHECK LICENSE STATUS</button>
+        <button onclick="checkLicense()"><i class="fas fa-sign-in-alt"></i> CHECK LICENSE STATUS</button>
         <div id="loginError" class="alert-error" style="display: none;"></div>
     </div>
     
-    <div id="statusSection" class="card hidden">
-        <div id="statusContent"></div>
-        <div id="requestForm" class="request-form">
-            <h3>📨 Request Extension / Reactivation</h3>
-            <select id="requestType">
-                <option value="extension">Extension (Add more days)</option>
-                <option value="reactivation">Reactivation (Reset HWID)</option>
-                <option value="other">Other Request</option>
-            </select>
-            <input type="number" id="requestDays" placeholder="Days to add (if extension)" value="7">
-            <textarea id="requestMessage" rows="3" placeholder="Describe your request..."></textarea>
-            <input type="text" id="contactInfo" placeholder="Your contact (Telegram/Discord/Email)" value="t.me/">
-            <button onclick="submitRequest()">SUBMIT REQUEST</button>
-            <div id="requestResult" class="alert-info" style="display: none;"></div>
+    <div id="statusSection" class="hidden">
+        <div class="card" id="statusCard">
+            <div id="statusContent"></div>
+            <div id="requestForm" class="request-form">
+                <h3><i class="fas fa-paper-plane"></i> Request Support</h3>
+                <select id="requestType">
+                    <option value="extension">📅 Extension (Add more days)</option>
+                    <option value="reactivation">🔄 Reactivation (Reset HWID)</option>
+                    <option value="other">💬 Other Request</option>
+                </select>
+                <input type="number" id="requestDays" placeholder="Days to add (if extension)" value="7">
+                <textarea id="requestMessage" rows="4" placeholder="Describe your request in detail..."></textarea>
+                <input type="text" id="contactInfo" placeholder="Your contact (Telegram/Discord/Email)" value="t.me/">
+                <button onclick="submitRequest()"><i class="fas fa-send"></i> SUBMIT REQUEST</button>
+                <div id="requestResult" class="alert-info" style="display: none;"></div>
+            </div>
+            <div class="contact-buttons">
+                <a href="https://t.me/JEPFX_0" target="_blank" class="contact-btn telegram-btn"><i class="fab fa-telegram-plane"></i> Telegram Support</a>
+            </div>
         </div>
-        <div class="contact-buttons">
-            <a href="https://t.me/JEPFX_0" target="_blank" class="contact-btn telegram-btn">📱 Contact on Telegram</a>
-        </div>
+    </div>
+    
+    <div class="footer">
+        <p>© 2024 JEPFX License System | All rights reserved</p>
     </div>
 </div>
 
@@ -1266,7 +1980,7 @@ def get_user_portal_html():
         }}
         
         btn.disabled = false;
-        btn.innerHTML = 'CHECK LICENSE STATUS';
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> CHECK LICENSE STATUS';
     }}
     
     function displayLicenseStatus(data) {{
@@ -1276,30 +1990,30 @@ def get_user_portal_html():
         
         let hwidHtml = '';
         if(data.hwids && data.hwids.length > 0) {{
-            hwidHtml = '<div class="info-row"><span class="info-label">🖥️ Activated Devices:</span><span class="info-value">' + data.hwids.length + ' device(s)</span></div>';
+            hwidHtml = '<div class="info-row"><span class="info-label"><i class="fas fa-desktop"></i> Activated Devices:</span><span class="info-value">' + data.hwids.length + ' device(s)</span></div>';
         }}
         
         let activationStatus = '';
         if(!data.activated && data.license_type === 'trial') {{
-            activationStatus = '<div class="alert-info" style="margin:10px 0;">⏳ License not activated yet. It will start counting down after first activation!</div>';
+            activationStatus = '<div class="alert-info" style="margin:15px 0;"><i class="fas fa-info-circle"></i> License not activated yet. It will start counting down after first activation!</div>';
         }}
         
         const html = `
             <div class="status-box ${{statusClass}}">
-                <div class="info-row"><span class="info-label">🔑 License Key:</span><span class="info-value"><code>${{data.license_key}}</code></span></div>
-                <div class="info-row"><span class="info-label">👤 Username:</span><span class="info-value">${{data.username}}</span></div>
-                <div class="info-row"><span class="info-label">📋 License Type:</span><span class="info-value">${{data.license_type}}</span></div>
-                <div class="info-row"><span class="info-label">📅 Expires:</span><span class="info-value">${{data.expires_at || 'NEVER'}}</span></div>
-                <div class="info-row"><span class="info-label">⏰ Status:</span><span class="info-value"><span class="badge ${{badgeClass}}">${{statusText}}</span></span></div>
-                ${{data.days_left !== null ? `<div class="info-row"><span class="info-label">📆 Days Left:</span><span class="info-value">${{data.days_left}} days</span></div>` : ''}}
-                ${{data.max_devices ? `<div class="info-row"><span class="info-label">💻 Max Devices:</span><span class="info-value">${{data.max_devices}}</span></div>` : ''}}
+                <div class="info-row"><span class="info-label"><i class="fas fa-key"></i> License Key:</span><span class="info-value"><code>${{data.license_key}}</code></span></div>
+                <div class="info-row"><span class="info-label"><i class="fas fa-user"></i> Username:</span><span class="info-value">${{data.username}}</span></div>
+                <div class="info-row"><span class="info-label"><i class="fas fa-tag"></i> License Type:</span><span class="info-value"><span class="badge badge-active">${{data.license_type}}</span></span></div>
+                <div class="info-row"><span class="info-label"><i class="fas fa-calendar"></i> Expires:</span><span class="info-value">${{data.expires_at || 'NEVER'}}</span></div>
+                <div class="info-row"><span class="info-label"><i class="fas fa-chart-line"></i> Status:</span><span class="info-value"><span class="badge ${{badgeClass}}">${{statusText}}</span></span></div>
+                ${{data.days_left !== null ? `<div class="info-row"><span class="info-label"><i class="fas fa-hourglass-half"></i> Days Left:</span><span class="info-value">${{data.days_left}} days</span></div>` : ''}}
+                ${{data.max_devices ? `<div class="info-row"><span class="info-label"><i class="fas fa-microchip"></i> Max Devices:</span><span class="info-value">${{data.max_devices}}</span></div>` : ''}}
                 ${{hwidHtml}}
-                ${{data.created_at ? `<div class="info-row"><span class="info-label">📅 Created:</span><span class="info-value">${{new Date(data.created_at).toLocaleString()}}</span></div>` : ''}}
-                ${{data.last_used ? `<div class="info-row"><span class="info-label">🕐 Last Used:</span><span class="info-value">${{new Date(data.last_used).toLocaleString()}}</span></div>` : ''}}
+                ${{data.created_at ? `<div class="info-row"><span class="info-label"><i class="fas fa-plus-circle"></i> Created:</span><span class="info-value">${{new Date(data.created_at).toLocaleString()}}</span></div>` : ''}}
+                ${{data.last_used ? `<div class="info-row"><span class="info-label"><i class="fas fa-clock"></i> Last Used:</span><span class="info-value">${{new Date(data.last_used).toLocaleString()}}</span></div>` : ''}}
             </div>
             ${{activationStatus}}
-            ${{data.is_expired ? '<div class="alert-error" style="margin:10px 0;">⚠️ Your license has expired. Submit a request for reactivation.</div>' : ''}}
-            ${{!data.is_expired && data.days_left < 7 && data.days_left !== null ? '<div class="alert-warning" style="background:rgba(245,158,11,0.2);border:1px solid var(--warning);padding:10px;border-radius:8px;margin:10px 0;">⚠️ Your license is expiring soon! Submit a request to extend.</div>' : ''}}
+            ${{data.is_expired ? '<div class="alert-error"><i class="fas fa-exclamation-triangle"></i> Your license has expired. Submit a request for reactivation.</div>' : ''}}
+            ${{!data.is_expired && data.days_left < 7 && data.days_left !== null ? '<div class="alert-warning" style="background:rgba(245,158,11,0.15);border:1px solid var(--warning);padding:14px;border-radius:12px;margin:15px 0;"><i class="fas fa-hourglass-end"></i> Your license is expiring soon! Submit a request to extend.</div>' : ''}}
         `;
         
         document.getElementById('statusContent').innerHTML = html;
@@ -1335,20 +2049,20 @@ def get_user_portal_html():
         
         if(data.success) {{
             resultDiv.className = 'alert-success';
-            resultDiv.innerHTML = '✅ Request submitted successfully! Admin will review and contact you soon.';
+            resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> Request submitted successfully! Admin will review and contact you soon.';
             resultDiv.style.display = 'block';
             document.getElementById('requestMessage').value = '';
             setTimeout(() => {{ resultDiv.style.display = 'none'; }}, 5000);
         }} else {{
             resultDiv.className = 'alert-error';
-            resultDiv.innerHTML = '❌ Error: ' + data.error;
+            resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error: ' + data.error;
             resultDiv.style.display = 'block';
         }}
     }}
     
     function showError(msg) {{
         const errorDiv = document.getElementById('loginError');
-        errorDiv.innerHTML = msg;
+        errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + msg;
         errorDiv.style.display = 'block';
         setTimeout(() => {{ errorDiv.style.display = 'none'; }}, 5000);
     }}
